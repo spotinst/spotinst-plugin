@@ -30,19 +30,19 @@ import java.util.*;
 public abstract class BaseSpotinstCloud extends Cloud {
 
     //region Members
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
-    protected String                           accountId;
-    protected String                           groupId;
-    protected Map<String, PendingInstance>     pendingInstances;
-    private   String                           labelString;
-    private   String                           idleTerminationMinutes;
-    private   String                           workspaceDir;
-    private   Set<LabelAtom>                   labelSet;
-    private   SlaveUsageEnum                   usage;
-    private   String                           tunnel;
-    private   String                           vmargs;
-    private   EnvironmentVariablesNodeProperty environmentVariables;
-    private   ToolLocationNodeProperty         toolLocations;
+    private static final Logger                           LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
+    protected            String                           accountId;
+    protected            String                           groupId;
+    protected            Map<String, PendingInstance>     pendingInstances;
+    private              String                           labelString;
+    private              String                           idleTerminationMinutes;
+    private              String                           workspaceDir;
+    private              Set<LabelAtom>                   labelSet;
+    private              SlaveUsageEnum                   usage;
+    private              String                           tunnel;
+    private              String                           vmargs;
+    private              EnvironmentVariablesNodeProperty environmentVariables;
+    private              ToolLocationNodeProperty         toolLocations;
 
     //endregion
 
@@ -113,14 +113,29 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public boolean canProvision(Label label) {
         boolean canProvision = true;
 
+        String labelDescription = null;
+
+        if (label != null) {
+            labelDescription = label.getName();
+        }
+
+        LOGGER.debug(String.format(
+                "Checking provision. Cloud usage type: %s, Requested label: %s, Cloud labels size: %s, Cloud labels: %s",
+                usage, labelDescription, labelSet.size(), labelSet));
+
         if (label != null) {
             canProvision = label.matches(labelSet);
+            LOGGER.debug(String.format("Requested label matched to cloud labels? %s", canProvision));
         }
         else {
             if (this.usage.equals(SlaveUsageEnum.EXCLUSIVE) && labelSet.size() > 0) {
+                LOGGER.debug(
+                        "Usage is EXCLUSIVE and there are cloud labels defined, no requested label - can't provision request");
                 canProvision = false;
             }
         }
+
+        LOGGER.debug(String.format("Can provision?  %s", canProvision));
 
         return canProvision;
     }
