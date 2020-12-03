@@ -13,9 +13,9 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AzureV3GroupStatus {
     //region members
-    private String          status;
-    private List<AzureV3Vm> vms;
-    private String          description;
+    private String               status;
+    private List<AzureV3GroupVm> vms;
+    private String               description;
     //endregion
 
     //region getters & setters
@@ -31,11 +31,11 @@ public class AzureV3GroupStatus {
         this.status = status;
     }
 
-    public List<AzureV3Vm> getVms() {
+    public List<AzureV3GroupVm> getVms() {
         return vms;
     }
 
-    public void setVms(List<AzureV3Vm> vms) {
+    public void setVms(List<AzureV3GroupVm> vms) {
         this.vms = vms;
     }
 

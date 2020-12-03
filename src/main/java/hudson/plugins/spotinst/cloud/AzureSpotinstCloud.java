@@ -143,6 +143,8 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
+    //TODO shibel: check the meaning of this and whether this can be changed
+    // in Spot API, "azure/compute" -> V3, "compute/azure" -> V2.
     @Override
     public String getCloudUrl() {
         return "/azure/compute";
@@ -279,7 +281,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
 
         @Override
         public String getDisplayName() {
-            return "Spotinst Azure Elastigroup";
+            return "Spotinst Azure LPVM (deprecated)";
         }
     }
     //endregion
