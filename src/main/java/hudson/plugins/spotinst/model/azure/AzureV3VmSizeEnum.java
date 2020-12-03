@@ -371,4 +371,33 @@ public enum AzureV3VmSizeEnum {
         this.value = value;
         this.executors = executors;
     }
+
+    public String toString() {
+        return this.value;
+    }
+
+    public Integer getExecutors() {
+        return executors;
+    }
+
+    public static AzureV3VmSizeEnum fromValue(String value) {
+        AzureV3VmSizeEnum retVal = null;
+        for (AzureV3VmSizeEnum vmSize : AzureV3VmSizeEnum.values()) {
+            if (vmSize.value.equals(value)) {
+                retVal = vmSize;
+                break;
+            }
+        }
+
+        if (retVal == null) {
+            LOGGER.error("Tried to create Azure V3 Size Enum for: " + value + " but we don't support such type ");
+        }
+
+        return retVal;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
 }
