@@ -10,7 +10,7 @@ import java.util.Date;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AzureV3VM {
+public class AzureV3Vm {
     //region members
     private String vmName;
     private String region;

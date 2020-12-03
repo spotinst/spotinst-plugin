@@ -5,7 +5,7 @@ import hudson.plugins.spotinst.api.infra.ApiException;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.ExceptionHelper;
 import hudson.plugins.spotinst.model.azure.AzureV3GroupStatus;
-import hudson.plugins.spotinst.model.azure.AzureV3VM;
+import hudson.plugins.spotinst.model.azure.AzureV3Vm;
 
 import java.util.List;
 
@@ -15,12 +15,12 @@ import java.util.List;
 public class AzureV3GroupRepo implements IAzureV3GroupRepo {
 
     @Override
-    public ApiResponse<List<AzureV3VM>> getGroupInstances(String groupId, String accountId) {
-        ApiResponse<List<AzureV3VM>> retVal;
+    public ApiResponse<List<AzureV3Vm>> getGroupInstances(String groupId, String accountId) {
+        ApiResponse<List<AzureV3Vm>> retVal;
 
         try {
             AzureV3GroupStatus groupStatus = SpotinstApi.getAzureV3GroupStatus(groupId, accountId);
-            List<AzureV3VM>    vms         = groupStatus.getVms();
+            List<AzureV3Vm>    vms         = groupStatus.getVms();
             retVal = new ApiResponse<>(vms);
         }
         catch (ApiException e) {

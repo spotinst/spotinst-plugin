@@ -12,8 +12,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
     //region Members
@@ -55,7 +57,21 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     public Boolean detachInstance(String instanceId) {
-        return null;
+        Boolean retVal         = false;
+        IAzureV3GroupRepo azureV3GroupRepo = RepoManager.getInstance().getAzureV3GroupRepo();
+        ApiResponse<Boolean> detachVmResponse =
+                azureV3GroupRepo.detachVM(groupId, instanceId, this.accountId);
+
+        if (detachVmResponse.isRequestSucceed()) {
+            LOGGER.info(String.format("Instance %s detached", instanceId));
+            retVal = true;
+        }
+        else {
+            LOGGER.error(String.format("Failed to detach instance %s. Errors: %s", instanceId,
+                                       detachVmResponse.getErrors()));
+        }
+
+        return retVal;
     }
 
     @Override
@@ -66,6 +82,21 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
     @Override
     public void syncGroupInstances() {
 
+    }
+    //endregion
+
+    //region Private Methods
+    private void addToGroupPending(ProvisionRequest request) {
+        for (int i = 0; i < request.getExecutors(); i++) {
+            String          key             = UUID.randomUUID().toString();
+            PendingInstance pendingInstance = new PendingInstance();
+            pendingInstance.setCreatedAt(new Date());
+            pendingInstance.setNumOfExecutors(1);
+            pendingInstance.setRequestedLabel(request.getLabel());
+            pendingInstance.setStatus(PendingInstance.StatusEnum.PENDING);
+
+            pendingInstances.put(key, pendingInstance);
+        }
     }
     //endregion
 

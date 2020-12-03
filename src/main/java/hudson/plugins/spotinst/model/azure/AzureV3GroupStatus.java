@@ -14,7 +14,7 @@ import java.util.List;
 public class AzureV3GroupStatus {
     //region members
     private String          status;
-    private List<AzureV3VM> vms;
+    private List<AzureV3Vm> vms;
     private String          description;
     //endregion
 
@@ -31,11 +31,11 @@ public class AzureV3GroupStatus {
         this.status = status;
     }
 
-    public List<AzureV3VM> getVms() {
+    public List<AzureV3Vm> getVms() {
         return vms;
     }
 
-    public void setVms(List<AzureV3VM> vms) {
+    public void setVms(List<AzureV3Vm> vms) {
         this.vms = vms;
     }
 

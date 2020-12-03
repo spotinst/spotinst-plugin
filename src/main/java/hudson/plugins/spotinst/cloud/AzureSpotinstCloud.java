@@ -88,7 +88,6 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     public void monitorInstances() {
-        //TODO shibel: ask Ohad why this is overriden here and not in syncGroupInstances only for Azure
         IAzureGroupRepo azureGroupRepo = RepoManager.getInstance().getAzureGroupRepo();
         ApiResponse<List<AzureGroupInstance>> instancesResponse =
                 azureGroupRepo.getGroupInstances(groupId, this.accountId);
