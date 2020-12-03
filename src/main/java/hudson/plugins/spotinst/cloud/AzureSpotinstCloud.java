@@ -117,16 +117,19 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         super.monitorInstances();
     }
 
+    // TODO shibel: check if I need to override this
     @Override
     protected Integer getPendingThreshold() {
         return Constants.AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
     }
 
+    //TODO shibel: check if I need to override this
     @Override
     public void onInstanceReady(String instanceId) {
         removeFromPending();
     }
 
+    //TODO shibel: check if I need to override this
     @Override
     protected PendingExecutorsCounts getPendingExecutors(ProvisionRequest request) {
         PendingExecutorsCounts retVal              = new PendingExecutorsCounts();

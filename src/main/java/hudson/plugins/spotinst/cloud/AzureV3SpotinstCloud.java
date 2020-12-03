@@ -21,9 +21,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+//TODO shibel:
+// - check pending executors function - why is Azure treated as 1 executors?
+// - check remove from pending function - why is only Azure overridden here?
 public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureV3SpotinstCloud.class);
@@ -81,6 +83,7 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
+    //TODO shibel: take care of this
     @Override
     public String getCloudUrl() {
         return null;
