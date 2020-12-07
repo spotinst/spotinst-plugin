@@ -7,11 +7,13 @@ import hudson.plugins.spotinst.common.SpotinstContext;
 import hudson.plugins.spotinst.model.aws.*;
 import hudson.plugins.spotinst.model.azure.*;
 import hudson.plugins.spotinst.model.gcp.*;
+import hudson.plugins.spotinst.repos.AzureV3ScaleUpResponse;
 import jenkins.model.Jenkins;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLOutput;
 import java.util.*;
 
 
@@ -236,7 +238,6 @@ public class SpotinstApi {
     }
     //endregion
 
-    //TODO shibel: CHECK EVERYTHING HERE
     //region Azure V3
     public static AzureV3GroupStatus getAzureV3GroupStatus(String groupId, String accountId) throws ApiException {
         AzureV3GroupStatus  retVal      = new AzureV3GroupStatus();
@@ -256,8 +257,9 @@ public class SpotinstApi {
         return retVal;
     }
 
-        public static Boolean azureV3ScaleUp(String groupId, int adjustment, String accountId) throws ApiException {
-        Map<String, String> headers = buildHeaders();
+        public static List<AzureScaleResultNewVm> azureV3ScaleUp(String groupId, int adjustment, String accountId) throws ApiException {
+        List<AzureScaleResultNewVm> retVal  = new LinkedList<>();
+        Map<String, String>         headers = buildHeaders();
 
         Map<String, String> queryParams = buildQueryParams(accountId);
         queryParams.put("adjustment", String.valueOf(adjustment));
@@ -266,13 +268,16 @@ public class SpotinstApi {
                 .sendPut(SPOTINST_API_HOST + AZURE_V3_SERVICE_PREFIX + "/group/" + groupId + "/scale/up", null, headers,
                          queryParams);
 
-        getCastedResponse(response, ApiEmptyResponse.class);
-        Boolean retVal = true;
+        AzureV3ScaleUpResponse scaleUpResponse = getCastedResponse(response, AzureV3ScaleUpResponse.class);
+
+        if (scaleUpResponse.getResponse().getItems().size() > 0) {
+            retVal = scaleUpResponse.getResponse().getItems();
+        }
 
         return retVal;
     }
 
-    public static Boolean azureV3DetachVM(String groupId, String vmId,
+    public static Boolean azureV3DetachVm(String groupId, String vmId,
                                           String accountId) throws ApiException {
         Map<String, String> headers     = buildHeaders();
         Map<String, String> queryParams = buildQueryParams(accountId);
@@ -282,11 +287,9 @@ public class SpotinstApi {
         request.setShouldDecrementTargetCapacity(true);
         request.setShouldTerminateVms(true);
         String body = JsonMapper.toJson(request);
-
         RestResponse response = RestClient
-                .sendPut(SPOTINST_API_HOST + AZURE_V3_SERVICE_PREFIX + "/group/" + groupId + "/detachVMs", body,
+                .sendPut(SPOTINST_API_HOST + AZURE_V3_SERVICE_PREFIX + "/group/" + groupId + "/detachVms", body,
                          headers, queryParams);
-
         getCastedResponse(response, ApiEmptyResponse.class);
         Boolean retVal = true;
 

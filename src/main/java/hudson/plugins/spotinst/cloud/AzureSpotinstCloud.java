@@ -117,19 +117,16 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         super.monitorInstances();
     }
 
-    // TODO shibel: check if I need to override this
     @Override
     protected Integer getPendingThreshold() {
         return Constants.AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
     }
 
-    //TODO shibel: check if I need to override this
     @Override
     public void onInstanceReady(String instanceId) {
         removeFromPending();
     }
 
-    //TODO shibel: check if I need to override this
     @Override
     protected PendingExecutorsCounts getPendingExecutors(ProvisionRequest request) {
         PendingExecutorsCounts retVal              = new PendingExecutorsCounts();
@@ -146,11 +143,9 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
-    //TODO shibel: check the meaning of this and whether this can be changed
-    // in Spot API, "azure/compute" -> V3, "compute/azure" -> V2.
     @Override
     public String getCloudUrl() {
-        return "/azure/compute";
+        return "azure/compute";
     }
     //endregion
 

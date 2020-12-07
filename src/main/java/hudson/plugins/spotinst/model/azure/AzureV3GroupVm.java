@@ -3,8 +3,6 @@ package hudson.plugins.spotinst.model.azure;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.Date;
-
 /**
  * Created by Shibel Karmi Mansour on 01/12/2020.
  */
@@ -13,7 +11,6 @@ import java.util.Date;
 public class AzureV3GroupVm {
     //region members
     private String vmName;
-    private String region;
     private String vmSize;
     private String lifeCycle;
     private String product;
@@ -21,7 +18,6 @@ public class AzureV3GroupVm {
     private String publicIp;
     private String provisioningState;
     private String powerState;
-    private Date   createdAt;
     //endregion
 
     //region getters & setters
@@ -31,14 +27,6 @@ public class AzureV3GroupVm {
 
     public void setVmName(String vmName) {
         this.vmName = vmName;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
     }
 
     public String getVmSize() {
@@ -95,14 +83,6 @@ public class AzureV3GroupVm {
 
     public void setPowerState(String powerState) {
         this.powerState = powerState;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
     }
     //endregion
 }

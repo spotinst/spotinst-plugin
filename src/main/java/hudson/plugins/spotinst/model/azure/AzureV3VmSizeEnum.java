@@ -383,7 +383,7 @@ public enum AzureV3VmSizeEnum {
     public static AzureV3VmSizeEnum fromValue(String value) {
         AzureV3VmSizeEnum retVal = null;
         for (AzureV3VmSizeEnum vmSize : AzureV3VmSizeEnum.values()) {
-            if (vmSize.value.equals(value)) {
+            if (vmSize.value.equalsIgnoreCase(value)) {
                 retVal = vmSize;
                 break;
             }

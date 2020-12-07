@@ -6,6 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.ExceptionHelper;
 import hudson.plugins.spotinst.model.azure.AzureV3GroupStatus;
 import hudson.plugins.spotinst.model.azure.AzureV3GroupVm;
+import hudson.plugins.spotinst.model.azure.AzureScaleResultNewVm;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class AzureV3GroupRepo implements IAzureV3GroupRepo {
         ApiResponse<Boolean> retVal;
 
         try {
-            Boolean isDetached = SpotinstApi.azureV3DetachVM(groupId, vmId, accountId);
+            Boolean isDetached = SpotinstApi.azureV3DetachVm(groupId, vmId, accountId);
 
             retVal = new ApiResponse<>(isDetached);
 
@@ -48,13 +49,13 @@ public class AzureV3GroupRepo implements IAzureV3GroupRepo {
     }
 
     @Override
-    public ApiResponse<Boolean> scaleUp(String groupId, Integer adjustment, String accountId) {
-        ApiResponse<Boolean> retVal;
+    public ApiResponse<List<AzureScaleResultNewVm>> scaleUp(String groupId, Integer adjustment, String accountId) {
+        ApiResponse<List<AzureScaleResultNewVm>> retVal;
 
         try {
-            Boolean didSucceed = SpotinstApi.azureV3ScaleUp(groupId, adjustment, accountId);
+            List<AzureScaleResultNewVm> scaleUpVms = SpotinstApi.azureV3ScaleUp(groupId, adjustment, accountId);
 
-            retVal = new ApiResponse<>(didSucceed);
+            retVal = new ApiResponse<>(scaleUpVms);
 
         }
         catch (ApiException e) {

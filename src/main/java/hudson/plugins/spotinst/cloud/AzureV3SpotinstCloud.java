@@ -4,7 +4,9 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
+import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureV3GroupVm;
+import hudson.plugins.spotinst.model.azure.AzureScaleResultNewVm;
 import hudson.plugins.spotinst.model.azure.AzureV3VmSizeEnum;
 import hudson.plugins.spotinst.repos.IAzureV3GroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
@@ -24,7 +26,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 //TODO shibel:
-// - check pending executors function - why is Azure treated as 1 executors?
 // - check remove from pending function - why is only Azure overridden here?
 public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
     //region Members
@@ -50,12 +51,24 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
         List<SpotinstSlave> retVal = new LinkedList<>();
 
         IAzureV3GroupRepo azureV3GroupRepo = RepoManager.getInstance().getAzureV3GroupRepo();
-        ApiResponse<Boolean> scaleUpResponse =
+        ApiResponse<List<AzureScaleResultNewVm>> scaleUpResponse =
                 azureV3GroupRepo.scaleUp(groupId, request.getExecutors(), this.accountId);
 
         if (scaleUpResponse.isRequestSucceed()) {
-            LOGGER.info(String.format("Scale up group %s succeeded", groupId));
-            addToGroupPending(request);
+
+            List<AzureScaleResultNewVm> newVms = scaleUpResponse.getValue();
+
+            Boolean isNewVmsPresent = newVms != null;
+
+            if (isNewVmsPresent) {
+                LOGGER.info(String.format("Scale up group %s succeeded", groupId));
+                List<SpotinstSlave> newInstanceSlaves = handleNewVms(newVms, request.getLabel());
+                retVal.addAll(newInstanceSlaves);
+            }
+            else {
+                LOGGER.error(String.format("Failed to scale up group: %s", groupId));
+            }
+
         }
         else {
             LOGGER.error(
@@ -83,10 +96,14 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
-    //TODO shibel: take care of this
     @Override
     public String getCloudUrl() {
-        return null;
+        return "azure/compute";
+    }
+
+    @Override
+    protected Integer getPendingThreshold() {
+        return Constants.AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
     }
 
     @Override
@@ -119,6 +136,27 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Private Methods
+    private List<SpotinstSlave> handleNewVms(List<AzureScaleResultNewVm> newVms, String label) {
+        List<SpotinstSlave> retVal = new LinkedList<>();
+
+        LOGGER.info(String.format("%s new instances launched", newVms.size()));
+
+
+        for (AzureScaleResultNewVm vm : newVms) {
+            SpotinstSlave slave = handleNewVm(vm.getVmName(), vm.getVmSize(), label);
+            retVal.add(slave);
+        }
+
+        return retVal;
+    }
+
+    private SpotinstSlave handleNewVm(String vmName, String vmSize, String label) {
+        Integer executors = getNumOfExecutors(vmSize);
+        addToPending(vmName, executors, PendingInstance.StatusEnum.PENDING, label);
+        SpotinstSlave retVal = buildSpotinstSlave(vmName, vmSize, String.valueOf(executors));
+        return retVal;
+    }
+
     private void removeOldSlaveInstances(List<AzureV3GroupVm> azureV3GroupVms) {
         List<SpotinstSlave> allGroupsSlaves = getAllSpotinstSlaves();
 
@@ -209,19 +247,6 @@ public class AzureV3SpotinstCloud extends BaseSpotinstCloud {
         }
 
         return retVal;
-    }
-
-    private void addToGroupPending(ProvisionRequest request) {
-        for (int i = 0; i < request.getExecutors(); i++) {
-            String          key             = UUID.randomUUID().toString();
-            PendingInstance pendingInstance = new PendingInstance();
-            pendingInstance.setCreatedAt(new Date());
-            pendingInstance.setNumOfExecutors(1);
-            pendingInstance.setRequestedLabel(request.getLabel());
-            pendingInstance.setStatus(PendingInstance.StatusEnum.PENDING);
-
-            pendingInstances.put(key, pendingInstance);
-        }
     }
     //endregion
 
