@@ -5,6 +5,7 @@ import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewInstance;
@@ -15,6 +16,7 @@ import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
 import hudson.plugins.spotinst.slave.SlaveUsageEnum;
 import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.SlaveComputer;
 import hudson.tools.ToolLocationNodeProperty;
@@ -43,10 +45,13 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
-                            String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs, EnvironmentVariablesNodeProperty environmentVariables,
-                            ToolLocationNodeProperty toolLocations, String accountId) {
-        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket, shouldRetriggerBuilds, vmargs, environmentVariables,
-              toolLocations, accountId);
+                            String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
+                            EnvironmentVariablesNodeProperty environmentVariables,
+                            ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                            ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
+        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
+              connectionMethod, computerConnector);
         this.executorsForTypes = new LinkedList<>();
         executorsForInstanceType = new HashMap<>();
 
@@ -168,10 +173,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                 retVal = type.getExecutors();
                 LOGGER.info(String.format("Using the default value of %s", retVal));
             }
-        } else {
+        }
+        else {
             LOGGER.warn(String.format(
-                    "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s", instanceType,
-                    retVal, this.getGroupId()));
+                    "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s",
+                    instanceType, retVal, this.getGroupId()));
         }
 
         return retVal;

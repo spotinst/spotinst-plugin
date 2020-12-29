@@ -1,25 +1,44 @@
 package hudson.plugins.spotinst.cloud;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
+import com.trilead.ssh2.Connection;
 import hudson.DescriptorExtensionList;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
 import hudson.plugins.spotinst.slave.SlaveUsageEnum;
 import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.plugins.sshslaves.SSHLauncher;
+import hudson.plugins.sshslaves.verifiers.SshHostKeyVerificationStrategy;
+import hudson.security.ACL;
+import hudson.security.AccessControlled;
 import hudson.slaves.Cloud;
+import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,21 +53,27 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
 
-    protected String                            accountId;
-    protected String                            groupId;
-    protected Map<String, PendingInstance>      pendingInstances;
-    protected Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
-    private   String                            labelString;
-    private   String                            idleTerminationMinutes;
-    private   String                            workspaceDir;
-    private   Set<LabelAtom>                    labelSet;
-    private   SlaveUsageEnum                    usage;
-    private   String                            tunnel;
-    private   String                            vmargs;
-    private   EnvironmentVariablesNodeProperty  environmentVariables;
-    private   ToolLocationNodeProperty          toolLocations;
-    private   Boolean                           shouldUseWebsocket;
-    private   Boolean                           shouldRetriggerBuilds;
+    protected           String                            accountId;
+    protected           String                            groupId;
+    protected           Map<String, PendingInstance>      pendingInstances;
+    protected           Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
+    private             String                            labelString;
+    private             String                            idleTerminationMinutes;
+    private             String                            workspaceDir;
+    private             Set<LabelAtom>                    labelSet;
+    private             SlaveUsageEnum                    usage;
+    private             String                            tunnel;
+    private             String                            vmargs;
+    private             EnvironmentVariablesNodeProperty  environmentVariables;
+    private             ToolLocationNodeProperty          toolLocations;
+    private             Boolean                           shouldUseWebsocket;
+    private             Boolean                           shouldRetriggerBuilds;
+    private transient   StandardUsernameCredentials       credentials;
+    private             ComputerConnector                 computerConnector;
+    private             ConnectionMethodEnum              connectionMethod;
+    public static final SchemeRequirement                 SSH_SCHEME = new SchemeRequirement("ssh");
+    private             SshHostKeyVerificationStrategy    sshHostKeyVerificationStrategy;
+    private             String                            credentialsId;
     //endregion
 
     //region Constructor
@@ -56,7 +81,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                              Boolean shouldRetriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
-                             ToolLocationNodeProperty toolLocations, String accountId) {
+                             ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
+        // TODO shibel: check descriptorOrg in branch ssh-research
+
         super(groupId);
         this.groupId = groupId;
         this.accountId = accountId;
@@ -80,6 +108,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.environmentVariables = environmentVariables;
         this.toolLocations = toolLocations;
         this.slaveInstancesDetailsByInstanceId = new HashMap<>();
+        this.computerConnector = computerConnector;
+        this.credentialsId = credentialsId;
+        this.connectionMethod = connectionMethod;
+
     }
 
 
@@ -388,6 +420,39 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.shouldRetriggerBuilds = shouldRetriggerBuilds;
     }
 
+    public ConnectionMethodEnum getConnectionMethod() {
+        return connectionMethod;
+    }
+
+    public void setConnectionMethod(ConnectionMethodEnum connectionMethod) {
+        this.connectionMethod = connectionMethod;
+    }
+
+
+    public ComputerConnector getComputerConnector() {
+        return computerConnector;
+    }
+
+    public void setComputerConnector(ComputerConnector computerConnector) {
+        this.computerConnector = computerConnector;
+    }
+
+    public SshHostKeyVerificationStrategy getSshHostKeyVerificationStrategy() {
+        return sshHostKeyVerificationStrategy;
+    }
+
+    public void setSshHostKeyVerificationStrategy(SshHostKeyVerificationStrategy sshHostKeyVerificationStrategy) {
+        this.sshHostKeyVerificationStrategy = sshHostKeyVerificationStrategy;
+    }
+
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
+    }
     //endregion
 
     //region Abstract Methods
@@ -409,6 +474,63 @@ public abstract class BaseSpotinstCloud extends Cloud {
         public String getKey(ToolInstallation installation) {
             return installation.getDescriptor().getClass().getName() + "@" + installation.getName();
         }
+
+        public List getComputerConnectorDescriptors() {
+            return Jenkins.get().getDescriptorList(ComputerConnector.class);
+        }
+
+        @RequirePOST
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath AccessControlled context,
+                                                     @QueryParameter String host, @QueryParameter String port,
+                                                     @QueryParameter String credentialsId) {
+            Jenkins jenkins = Jenkins.get();
+            if ((context == jenkins && !jenkins.hasPermission(Computer.CREATE)) ||
+                (context != jenkins && !context.hasPermission(Computer.CONFIGURE))) {
+                return new StandardUsernameListBoxModel().includeCurrentValue(credentialsId);
+            }
+            try {
+                // TODO shibel: a number format exception was possible when the port is specified
+                //  but is not possible anymore, so check whether to catch here at all, and what.
+
+                //                int portValue = Integer.parseInt(port);
+                return new StandardUsernameListBoxModel()
+                        .includeMatchingAs(ACL.SYSTEM, jenkins, StandardUsernameCredentials.class,
+                                           Collections.singletonList(new DomainRequirement()),
+                                           SSHAuthenticator.matcher(Connection.class)).includeCurrentValue(
+                                credentialsId); // always add the current value last in case already present
+            }
+            catch (NumberFormatException ex) {
+                return new StandardUsernameListBoxModel().includeCurrentValue(credentialsId);
+            }
+        }
+    }
+    //endregion
+
+    //region Helper Methods
+    public StandardUsernameCredentials getCredentials() {
+        String credentialsId =
+                this.credentialsId == null ? (this.credentials == null ? null : this.credentials.getId()) :
+                this.credentialsId;
+        try {
+            StandardUsernameCredentials credentials =
+                    credentialsId != null ? SSHLauncher.lookupSystemCredentials(credentialsId) : null;
+            if (credentials != null) {
+                this.credentials = credentials;
+                return credentials;
+            }
+        }
+        catch (Throwable t) {
+            // ignore
+        }
+
+        return this.credentials;
+    }
+
+    public static StandardUsernameCredentials lookupSystemCredentials(String credentialsId) {
+        return CredentialsMatchers.firstOrNull(CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
+                                                                                     Jenkins.get(), ACL.SYSTEM,
+                                                                                     SSH_SCHEME),
+                                               CredentialsMatchers.withId(credentialsId));
     }
     //endregion
 }

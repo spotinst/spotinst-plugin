@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureGroupVm;
 import hudson.plugins.spotinst.model.azure.AzureScaleUpResultNewVm;
@@ -13,6 +14,7 @@ import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
 import hudson.plugins.spotinst.slave.SlaveUsageEnum;
 import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
@@ -39,9 +41,11 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
                           SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                           Boolean shouldRetriggerBuilds, String vmargs,
                           EnvironmentVariablesNodeProperty environmentVariables,
-                          ToolLocationNodeProperty toolLocations, String accountId) {
+                          ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                          ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId);
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
+              connectionMethod, computerConnector);
     }
     //endregion
 

@@ -22,18 +22,37 @@
     <f:entry title="Usage" field="usage">
         <f:enum>${it.name()}</f:enum>
     </f:entry>
-    <f:entry title="${%Tunnel connection through}" field="tunnel">
-        <f:textbox/>
-    </f:entry>
-    <f:entry title="${%Use WebSocket}" field="shouldUseWebsocket">
-        <f:checkbox/>
-    </f:entry>
+
+
+    <f:section title="Connection to Agents">
+        <f:radioBlock checked="${instance == null || instance.connectionMethod == null || instance.connectionMethod == 'JNLP'}" name="connectionMethod" title="JNLP" value="JNLP" inline="true">
+            <f:entry title="${%Tunnel connection through}" field="tunnel">
+              <f:textbox />
+            </f:entry>
+            <f:entry title="${%Use WebSocket}" field="shouldUseWebsocket">
+              <f:checkbox/>
+            </f:entry>
+        </f:radioBlock>
+
+        <f:radioBlock checked="${instance.connectionMethod == 'SSH_OR_COMMAND'}" name="connectionMethod" title="SSH" value="SSH_OR_COMMAND" inline="true">
+             <f:entry title="Launcher" field="launcher" id="launcherList" style="margin-bottom:-2em;">
+               <f:dropdownDescriptorSelector field="computerConnector" descriptors="${descriptor.getComputerConnectorDescriptors()}" default="1"/>
+             </f:entry>
+        </f:radioBlock>
+    </f:section>
+    <f:entry><span style="display:block; margin-bottom: 2em;"></span></f:entry>
+
+
+
+
     <f:entry title="${%Retrigger Builds on Node Interruption}" field="shouldRetriggerBuilds">
       <f:checkbox checked="${instance == null || instance.shouldRetriggerBuilds == null || instance.shouldRetriggerBuilds}"/>
     </f:entry>
     <f:entry title="${%JVM options}" field="vmargs">
         <f:textbox/>
     </f:entry>
+
+
     <st:include class="${descriptor.clazz}" page="config-entries.jelly" />
 
     <f:optionalBlock name="environmentVariables" title ="Environment variables" checked="${instance.environmentVariables != null}">
