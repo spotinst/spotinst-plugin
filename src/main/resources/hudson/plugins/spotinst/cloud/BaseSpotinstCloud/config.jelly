@@ -23,7 +23,7 @@
         <f:enum>${it.name()}</f:enum>
     </f:entry>
 
-
+    // TODO shibel: stylize better
     <f:section title="Connection to Agents">
         <f:radioBlock checked="${instance == null || instance.connectionMethod == null || instance.connectionMethod == 'JNLP'}" name="connectionMethod" title="JNLP" value="JNLP" inline="true">
             <f:entry title="${%Tunnel connection through}" field="tunnel">

@@ -1,11 +1,10 @@
 package hudson.plugins.spotinst.slave;
 
 import hudson.Extension;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Node;
-import hudson.model.Slave;
+import hudson.model.*;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
+import hudson.slaves.ComputerLauncher;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
@@ -42,9 +41,28 @@ public class SpotinstSlave extends Slave {
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, String tunnel, Boolean shouldUseWebsocket, String vmargs,
                          List<NodeProperty<?>> nodeProperties, Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
+
+
         super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label,
-              new SpotinstComputerLauncher(tunnel, vmargs, shouldUseWebsocket, shouldRetriggerBuilds),
+              null,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
+
+        ComputerLauncher launcher = null;
+
+        if (spotinstCloud.getConnectionMethod() == ConnectionMethodEnum.SSH_OR_COMMAND) {
+            // TODO shibel: investigate why this is needed.
+            try {
+                launcher = new SpotSSHComputerLauncher(spotinstCloud.getComputerConnector().launch(this.getPublicIp(), TaskListener.NULL));
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            launcher = new SpotinstComputerLauncher(tunnel, vmargs, shouldUseWebsocket, shouldRetriggerBuilds);
+        }
+
+        this.setLauncher(launcher);
 
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
