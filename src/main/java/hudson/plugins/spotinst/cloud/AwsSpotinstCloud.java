@@ -133,9 +133,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
             LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
 
-            addNewSlaveInstances(instances);
-            removeOldSlaveInstances(instances);
-
             Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
 
             for (AwsGroupInstance instance : instances) {
@@ -144,6 +141,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             }
 
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+            addNewSlaveInstances(instances);
+            removeOldSlaveInstances(instances);
+
+
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,

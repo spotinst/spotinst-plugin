@@ -47,10 +47,11 @@ public class SpotinstSlave extends Slave {
               null,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
+        this.spotinstCloud = spotinstCloud;
         ComputerLauncher launcher = null;
 
         if (spotinstCloud.getConnectionMethod() == ConnectionMethodEnum.SSH_OR_COMMAND) {
-            // TODO shibel: investigate why this is needed.
+            // TODO shibel: investigate why this is needed here. it's not used in other projects
             try {
                 launcher = new SpotSSHComputerLauncher(spotinstCloud.getComputerConnector().launch(this.getPublicIp(), TaskListener.NULL));
             }
@@ -71,7 +72,7 @@ public class SpotinstSlave extends Slave {
         this.usage = SlaveUsageEnum.fromMode(mode);
         this.createdAt = new Date();
 
-        this.spotinstCloud = spotinstCloud;
+
         groupUrl = spotinstCloud.getCloudUrl();
     }
     //endregion
