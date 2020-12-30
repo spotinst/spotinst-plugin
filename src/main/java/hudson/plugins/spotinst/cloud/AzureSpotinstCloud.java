@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by ohadmuchnik on 19/06/2017.
@@ -39,10 +40,10 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
                               SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
                               EnvironmentVariablesNodeProperty environmentVariables,
                               ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
-                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
+                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector, Boolean shouldUsePrivateIp) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket, shouldRetriggerBuilds, vmargs,
               environmentVariables, toolLocations, accountId, credentialsId,
-              connectionMethod, computerConnector);
+              connectionMethod, computerConnector, shouldUsePrivateIp);
     }
     //endregion
 
@@ -88,6 +89,30 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     @Override
     public void syncGroupInstances() {
 
+    }
+
+    @Override
+    public Map<String, String> getInstanceIpsById() {
+        Map<String, String> retVal = new HashMap<>();
+
+        IAzureGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAzureGroupRepo();
+        ApiResponse<List<AzureGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+
+        if (instancesResponse.isRequestSucceed()) {
+            List<AzureGroupInstance> instances = instancesResponse.getValue();
+
+            if (this.getShouldUsePrivateIp()) {
+                retVal = instances.stream().collect(
+                        Collectors.toMap(AzureGroupInstance::getInstanceId, AzureGroupInstance::getPrivateIp));
+            }
+            else {
+                retVal = instances.stream().collect(
+                        Collectors.toMap(AzureGroupInstance::getInstanceId, AzureGroupInstance::getPublicIp));
+            }
+        }
+        //TODO shibel: handle else clause
+
+        return retVal;
     }
 
     @Override

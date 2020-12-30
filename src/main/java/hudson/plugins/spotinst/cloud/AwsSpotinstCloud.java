@@ -2,6 +2,7 @@ package hudson.plugins.spotinst.cloud;
 
 import hudson.Extension;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
@@ -13,9 +14,7 @@ import hudson.plugins.spotinst.model.aws.AwsScaleResultNewSpot;
 import hudson.plugins.spotinst.model.aws.AwsScaleUpResult;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
-import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
-import hudson.plugins.spotinst.slave.SlaveUsageEnum;
-import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.plugins.spotinst.slave.*;
 import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.SlaveComputer;
@@ -27,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by ohadmuchnik on 20/03/2017.
@@ -48,10 +48,13 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                             String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
                             EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
-                            ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
+                            ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                            Boolean shouldUsePrivateIp) {
+
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
-              connectionMethod, computerConnector);
+              connectionMethod, computerConnector, shouldUsePrivateIp);
+
         this.executorsForTypes = new LinkedList<>();
         executorsForInstanceType = new HashMap<>();
 
@@ -151,6 +154,30 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
                                        instancesResponse.getErrors()));
         }
+    }
+
+    @Override
+    public Map<String, String> getInstanceIpsById() {
+        Map<String, String> retVal = new HashMap<>();
+
+        IAwsGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+
+        if (instancesResponse.isRequestSucceed()) {
+            List<AwsGroupInstance> instances = instancesResponse.getValue();
+
+            if (this.getShouldUsePrivateIp()) {
+                retVal = instances.stream().collect(
+                        Collectors.toMap(AwsGroupInstance::getInstanceId, AwsGroupInstance::getPrivateIp));
+            }
+            else {
+                retVal = instances.stream().collect(
+                        Collectors.toMap(AwsGroupInstance::getInstanceId, AwsGroupInstance::getPublicIp));
+            }
+        }
+        //TODO shibel: handle else clause
+
+        return retVal;
     }
 
     @Override
@@ -280,6 +307,8 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         }
     }
 
+    // TODO shibel: consider with Ohad: should we add this to other clouds?
+    // probably not for now
     private void terminateOfflineSlaves(SpotinstSlave slave, String slaveInstanceId) {
         SlaveComputer computer = slave.getComputer();
 

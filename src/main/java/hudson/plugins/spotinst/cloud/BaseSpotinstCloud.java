@@ -9,18 +9,13 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.trilead.ssh2.Connection;
 import hudson.DescriptorExtensionList;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Label;
-import hudson.model.Node;
+import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.TimeUtils;
-import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
-import hudson.plugins.spotinst.slave.SlaveUsageEnum;
-import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.plugins.sshslaves.verifiers.SshHostKeyVerificationStrategy;
 import hudson.security.ACL;
@@ -69,11 +64,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private             Boolean                           shouldUseWebsocket;
     private             Boolean                           shouldRetriggerBuilds;
     private transient   StandardUsernameCredentials       credentials;
-    private             ComputerConnector                 computerConnector;
+    private transient   ComputerConnector                 computerConnector;
     private             ConnectionMethodEnum              connectionMethod;
     public static final SchemeRequirement                 SSH_SCHEME = new SchemeRequirement("ssh");
     private             SshHostKeyVerificationStrategy    sshHostKeyVerificationStrategy;
     private             String                            credentialsId;
+    private             Boolean                           shouldUsePrivateIp;
     //endregion
 
     //region Constructor
@@ -82,7 +78,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              Boolean shouldRetriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
                              ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
-                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
+                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                             Boolean shouldUsePrivateIp) {
         // TODO shibel: check descriptorOrg in branch ssh-research
 
         super(groupId);
@@ -111,10 +108,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.computerConnector = computerConnector;
         this.credentialsId = credentialsId;
         this.connectionMethod = connectionMethod;
-
+        this.shouldUsePrivateIp = shouldUsePrivateIp;
     }
-
-
     //endregion
 
     //region Overridden Public Methods
@@ -133,7 +128,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
             if (slaves.size() > 0) {
                 for (final SpotinstSlave slave : slaves) {
-
                     try {
                         Jenkins.getInstance().addNode(slave);
                     }
@@ -208,7 +202,99 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
                 }
             }
+
+            checkIpsForSSHAgents(pendingInstances);
         }
+    }
+
+    private void checkIpsForSSHAgents(Map<String, PendingInstance> pendingInstances) {
+
+        List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
+
+        if (offlineAgents.size() > 0) {
+            Map<String, String> instanceIpById = this.getInstanceIpsById();
+
+            for (SpotinstSlave offlineAgent: offlineAgents) {
+                String agentName   = offlineAgent.getNodeName();
+                String ipForAgent = instanceIpById.get(agentName);
+
+                if (ipForAgent != null) {
+                    String preFormat = "IP for agent %s is now available at %s, trying to attach SSH launcher";
+                    LOGGER.info(preFormat, agentName, ipForAgent);
+
+                    //TODO shibel: handle failures better
+                    connectAgent(offlineAgent, ipForAgent);
+
+                }
+                else {
+                    String preFormat = "IP for agent %s is still null, not attaching SSH launcher";
+                    LOGGER.info(String.format(preFormat, agentName));
+                }
+            }
+        }
+        else {
+            LOGGER.info("All SSH agents are online and connected");
+        }
+    }
+
+    private void connectAgent(SpotinstSlave offlineAgent, String ipForAgent) {
+        SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.getComputer();
+
+        if (computerForAgent != null) {
+            ComputerConnector connector = this.getComputerConnector();
+
+            if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+
+                try {
+                    SpotSSHComputerLauncher launcher =
+                            new SpotSSHComputerLauncher(connector.launch(ipForAgent, TaskListener.NULL));
+                    offlineAgent.setLauncher(launcher);
+                    launcher.launch(computerForAgent, TaskListener.NULL);
+                }
+                catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+    }
+
+    private List<SpotinstSlave> getOfflineSSHAgents(Map<String, PendingInstance> pendingInstances) {
+        List<SpotinstSlave> retVal = new LinkedList<>();
+
+        if (pendingInstances.size() > 0) {
+            List<String> keys = new LinkedList<>(pendingInstances.keySet());
+
+            for (String key : keys) {
+                PendingInstance pendingInstance = pendingInstances.get(key);
+                String          instanceId      = pendingInstance.getId();
+                SpotinstSlave   agent           = (SpotinstSlave) Jenkins.get().getNode(instanceId);
+
+                if (agent == null) {
+                    LOGGER.warn(String.format("Pending instance %s does not have a SpotinstSlave", instanceId));
+                    continue;
+                }
+
+                SpotinstComputer computerForAgent = (SpotinstComputer) agent.getComputer();
+
+                if (computerForAgent == null) {
+                    LOGGER.warn(String.format("Agent %s does not have a computer", instanceId));
+                    continue;
+                }
+
+                if (computerForAgent.isOnline()) {
+                    LOGGER.info(String.format("Agent %s is already online, no need to handle", instanceId));
+                } else {
+
+                    if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+                        retVal.add(agent);
+                    }
+                }
+
+            }
+        }
+
+        return retVal;
     }
 
     public SlaveInstanceDetails getSlaveDetails(String instanceId) {
@@ -453,6 +539,14 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public void setCredentialsId(String credentialsId) {
         this.credentialsId = credentialsId;
     }
+
+    public Boolean getShouldUsePrivateIp() {
+        return shouldUsePrivateIp;
+    }
+
+    public void setShouldUsePrivateIp(Boolean shouldUsePrivateIp) {
+        this.shouldUsePrivateIp = shouldUsePrivateIp;
+    }
     //endregion
 
     //region Abstract Methods
@@ -463,6 +557,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public abstract String getCloudUrl();
 
     public abstract void syncGroupInstances();
+
+    public abstract Map<String, String> getInstanceIpsById();
     //endregion
 
     //region Abstract Class

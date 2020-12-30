@@ -5,10 +5,12 @@ import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
+import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.gcp.GcpGroupInstance;
 import hudson.plugins.spotinst.model.gcp.GcpMachineType;
 import hudson.plugins.spotinst.model.gcp.GcpResultNewInstance;
 import hudson.plugins.spotinst.model.gcp.GcpScaleUpResult;
+import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.IGcpGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
@@ -27,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by ohadmuchnik on 20/03/2017.
@@ -40,13 +43,15 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     //region Constructors
     @DataBoundConstructor
     public GcpSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
-                            SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
+                            SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
+                            Boolean shouldRetriggerBuilds, String vmargs,
                             EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
-                            ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector) {
-        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket, shouldRetriggerBuilds, vmargs, environmentVariables,
-              toolLocations, accountId, credentialsId,
-              connectionMethod, computerConnector);
+                            ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                            Boolean shouldUsePrivateIp) {
+        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
+              connectionMethod, computerConnector, shouldUsePrivateIp);
     }
     //endregion
 
@@ -139,6 +144,30 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
                                        instancesResponse.getErrors()));
         }
+    }
+
+    @Override
+    public Map<String, String> getInstanceIpsById() {
+        Map<String, String> retVal = new HashMap<>();
+
+        IGcpGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getGcpGroupRepo();
+        ApiResponse<List<GcpGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+
+        if (instancesResponse.isRequestSucceed()) {
+            List<GcpGroupInstance> instances = instancesResponse.getValue();
+
+            if (this.getShouldUsePrivateIp()) {
+                retVal = instances.stream().collect(
+                        Collectors.toMap(GcpGroupInstance::getInstanceName, GcpGroupInstance::getPrivateIpAddress));
+            }
+            else {
+                retVal = instances.stream().collect(
+                        Collectors.toMap(GcpGroupInstance::getInstanceName, GcpGroupInstance::getPublicIpAddress));
+            }
+        }
+        //TODO shibel: handle else clause
+
+        return retVal;
     }
 
     @Override

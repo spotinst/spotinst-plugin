@@ -40,31 +40,18 @@ public class SpotinstSlave extends Slave {
     public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, String tunnel, Boolean shouldUseWebsocket, String vmargs,
-                         List<NodeProperty<?>> nodeProperties, Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
+                         List<NodeProperty<?>> nodeProperties,
+                         Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
 
 
-        super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label,
-              null,
+        super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, null,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
         this.spotinstCloud = spotinstCloud;
-        ComputerLauncher launcher = null;
-
-        if (spotinstCloud.getConnectionMethod() == ConnectionMethodEnum.SSH_OR_COMMAND) {
-            // TODO shibel: investigate why this is needed here. it's not used in other projects
-            try {
-                launcher = new SpotSSHComputerLauncher(spotinstCloud.getComputerConnector().launch(this.getPublicIp(), TaskListener.NULL));
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        else {
-            launcher = new SpotinstComputerLauncher(tunnel, vmargs, shouldUseWebsocket, shouldRetriggerBuilds);
-        }
+        SlaveInstanceDetails instanceDetailsById = spotinstCloud.getSlaveDetails(this.name);
+        ComputerLauncher     launcher            = getLauncher(instanceDetailsById);
 
         this.setLauncher(launcher);
-
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
         this.instanceId = instanceId;
@@ -242,6 +229,43 @@ public class SpotinstSlave extends Slave {
         this.spotinstCloud.onInstanceReady(getNodeName());
     }
     //endregion
+
+    //region Private Methods
+    private ComputerLauncher getLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
+        ComputerLauncher launcher   = null;
+        Boolean          isSSHCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
+
+        if (isSSHCloud) {
+            boolean instanceHasPublicIp = instanceDetailsById != null && instanceDetailsById.getPublicIp() != null;
+
+            if (instanceHasPublicIp) {
+                //TODO shibel: investigate why catching InterruptedException is needed here, but not in other places.
+                try {
+                    launcher = new SpotSSHComputerLauncher(spotinstCloud.getComputerConnector()
+                                                                        .launch(instanceDetailsById.getPublicIp(),
+                                                                                TaskListener.NULL));
+                }
+                catch (InterruptedException e) {
+                    String preformatted =
+                            "Creating SSHComputerLauncher in SpotinstSlave constructor for instance %s was interrupted";
+                    LOGGER.error(String.format(preformatted, this.name));
+                }
+
+            }
+            else {
+                LOGGER.info(
+                        "SSH connecting instance %s does not have a public IP yet, keeping launcher as null for now.");
+            }
+        }
+        else {
+            launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
+                                                    this.spotinstCloud.getShouldUseWebsocket(),
+                                                    this.spotinstCloud.getShouldRetriggerBuilds());
+        }
+        return launcher;
+    }
+    //endregion
+
 
     //region Extension class
     @Extension
