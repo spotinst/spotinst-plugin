@@ -205,6 +205,13 @@ public class SpotinstSlave extends Slave {
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
+
+            if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
+                // all that onInstanceReady does is remove from pending instances
+                this.getSpotinstCloud().onInstanceReady(getInstanceId());
+                LOGGER.info(String.format("Instance: %s removed from pending instances after termination", getInstanceId()));
+            }
+
         }
         else {
             LOGGER.error(String.format("Failed to terminate instance: %s", getInstanceId()));
@@ -235,6 +242,7 @@ public class SpotinstSlave extends Slave {
         ComputerLauncher launcher   = null;
         Boolean          isSSHCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
 
+        // TODO shibel: check for private IP preference
         if (isSSHCloud) {
             boolean instanceHasPublicIp = instanceDetailsById != null && instanceDetailsById.getPublicIp() != null;
 
@@ -254,7 +262,7 @@ public class SpotinstSlave extends Slave {
             }
             else {
                 LOGGER.info(
-                        "SSH connecting instance %s does not have a public IP yet, keeping launcher as null for now.");
+                        String.format("SSH-connecting instance %s does not have an IP yet, keeping launcher as null for now.", this.name));
             }
         }
         else {

@@ -64,7 +64,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private             Boolean                           shouldUseWebsocket;
     private             Boolean                           shouldRetriggerBuilds;
     private transient   StandardUsernameCredentials       credentials;
-    private transient   ComputerConnector                 computerConnector;
+    private             ComputerConnector                 computerConnector;
     private             ConnectionMethodEnum              connectionMethod;
     public static final SchemeRequirement                 SSH_SCHEME = new SchemeRequirement("ssh");
     private             SshHostKeyVerificationStrategy    sshHostKeyVerificationStrategy;
@@ -110,6 +110,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.connectionMethod = connectionMethod;
         this.shouldUsePrivateIp = shouldUsePrivateIp;
     }
+
+    //TODO shibel:
+    // Dec 30, 2020 3:42:06 PM WARNING hudson.plugins.spotinst.cloud.BaseSpotinstCloud getOfflineSSHAgents
+    //Pending instance i-005f3a7e811c454e6 does not have a SpotinstSlave
+    //Dec 30, 2020 3:42:06 PM INFO hudson.plugins.spotinst.cloud.BaseSpotinstCloud checkIpsForSSHAgents
+    //All SSH agents are online and connected
+
     //endregion
 
     //region Overridden Public Methods
@@ -212,16 +219,17 @@ public abstract class BaseSpotinstCloud extends Cloud {
         List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
 
         if (offlineAgents.size() > 0) {
-            Map<String, String> instanceIpById = this.getInstanceIpsById();
+            Map<String, String> instanceIpById = getInstanceIpsById();
 
-            for (SpotinstSlave offlineAgent: offlineAgents) {
-                String agentName   = offlineAgent.getNodeName();
+            for (SpotinstSlave offlineAgent : offlineAgents) {
+                String agentName  = offlineAgent.getNodeName();
                 String ipForAgent = instanceIpById.get(agentName);
 
                 if (ipForAgent != null) {
                     String preFormat = "IP for agent %s is now available at %s, trying to attach SSH launcher";
-                    LOGGER.info(preFormat, agentName, ipForAgent);
-
+                    LOGGER.info(String.format(preFormat, agentName, ipForAgent));
+                    LOGGER.info(offlineAgent.getNodeName());
+                    LOGGER.info(ipForAgent);
                     //TODO shibel: handle failures better
                     connectAgent(offlineAgent, ipForAgent);
 
@@ -233,7 +241,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
             }
         }
         else {
-            LOGGER.info("All SSH agents are online and connected");
+            LOGGER.info("There are no offline SSH agents waiting to connect");
         }
     }
 
@@ -241,9 +249,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.getComputer();
 
         if (computerForAgent != null) {
-            ComputerConnector connector = this.getComputerConnector();
+            ComputerConnector connector = getComputerConnector();
 
-            if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+
+            // TODO shibel: check this logic more thoroughly - can we connect a JNLP launcher here by mistake?
+            if (computerForAgent.getLauncher() == null ||
+                computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
 
                 try {
                     SpotSSHComputerLauncher launcher =
@@ -284,7 +295,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
                 if (computerForAgent.isOnline()) {
                     LOGGER.info(String.format("Agent %s is already online, no need to handle", instanceId));
-                } else {
+                }
+                else {
 
                     if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
                         retVal.add(agent);
@@ -541,6 +553,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public Boolean getShouldUsePrivateIp() {
+        // default for clouds that were configured before introducing this field
+        if (shouldUsePrivateIp == null) {
+            return false;
+        }
         return shouldUsePrivateIp;
     }
 
