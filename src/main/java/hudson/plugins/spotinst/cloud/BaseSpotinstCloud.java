@@ -1,13 +1,5 @@
 package hudson.plugins.spotinst.cloud;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
-import com.trilead.ssh2.Connection;
 import hudson.DescriptorExtensionList;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
@@ -16,10 +8,6 @@ import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.slave.*;
-import hudson.plugins.sshslaves.SSHLauncher;
-import hudson.plugins.sshslaves.verifiers.SshHostKeyVerificationStrategy;
-import hudson.security.ACL;
-import hudson.security.AccessControlled;
 import hudson.slaves.Cloud;
 import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
@@ -28,12 +16,8 @@ import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
-import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,11 +47,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private             ToolLocationNodeProperty          toolLocations;
     private             Boolean                           shouldUseWebsocket;
     private             Boolean                           shouldRetriggerBuilds;
-    private transient   StandardUsernameCredentials       credentials;
     private             ComputerConnector                 computerConnector;
     private             ConnectionMethodEnum              connectionMethod;
-    public static final SchemeRequirement                 SSH_SCHEME = new SchemeRequirement("ssh");
-    private             SshHostKeyVerificationStrategy    sshHostKeyVerificationStrategy;
     private             String                            credentialsId;
     private             Boolean                           shouldUsePrivateIp;
     //endregion
@@ -110,13 +91,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.connectionMethod = connectionMethod;
         this.shouldUsePrivateIp = shouldUsePrivateIp;
     }
-
-    //TODO shibel:
-    // Dec 30, 2020 3:42:06 PM WARNING hudson.plugins.spotinst.cloud.BaseSpotinstCloud getOfflineSSHAgents
-    //Pending instance i-005f3a7e811c454e6 does not have a SpotinstSlave
-    //Dec 30, 2020 3:42:06 PM INFO hudson.plugins.spotinst.cloud.BaseSpotinstCloud checkIpsForSSHAgents
-    //All SSH agents are online and connected
-
     //endregion
 
     //region Overridden Public Methods
@@ -226,13 +200,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 String ipForAgent = instanceIpById.get(agentName);
 
                 if (ipForAgent != null) {
-                    String preFormat = "IP for agent %s is now available at %s, trying to attach SSH launcher";
+                    String preFormat = "IP for agent %s is now available at %s, trying to attach SSHLauncher and launch";
                     LOGGER.info(String.format(preFormat, agentName, ipForAgent));
-                    LOGGER.info(offlineAgent.getNodeName());
-                    LOGGER.info(ipForAgent);
                     //TODO shibel: handle failures better
                     connectAgent(offlineAgent, ipForAgent);
-
                 }
                 else {
                     String preFormat = "IP for agent %s is still null, not attaching SSH launcher";
@@ -257,12 +228,20 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
 
                 try {
-                    SpotSSHComputerLauncher launcher =
-                            new SpotSSHComputerLauncher(connector.launch(ipForAgent, TaskListener.NULL));
+                    SpotSSHComputerLauncher launcher = new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()));
+
                     offlineAgent.setLauncher(launcher);
-                    launcher.launch(computerForAgent, TaskListener.NULL);
+                    // TODO shibel: ask Ohad, do we want to expose those logs?
+                    // naturally the first 1-2 attempts will fail
+                    // because instance is still initiating / Java isn't installed yet
+                    launcher.launch(computerForAgent, computerForAgent.getListener());
+
+
                 }
                 catch (IOException | InterruptedException e) {
+                    // TODO shibel: handle better
+                    LOGGER.error(e.getCause().toString());
+                    LOGGER.error(e.getMessage());
                     e.printStackTrace();
                 }
 
@@ -535,14 +514,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.computerConnector = computerConnector;
     }
 
-    public SshHostKeyVerificationStrategy getSshHostKeyVerificationStrategy() {
-        return sshHostKeyVerificationStrategy;
-    }
-
-    public void setSshHostKeyVerificationStrategy(SshHostKeyVerificationStrategy sshHostKeyVerificationStrategy) {
-        this.sshHostKeyVerificationStrategy = sshHostKeyVerificationStrategy;
-    }
-
     public String getCredentialsId() {
         return credentialsId;
     }
@@ -590,59 +561,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         public List getComputerConnectorDescriptors() {
             return Jenkins.get().getDescriptorList(ComputerConnector.class);
         }
-
-        @RequirePOST
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath AccessControlled context,
-                                                     @QueryParameter String host, @QueryParameter String port,
-                                                     @QueryParameter String credentialsId) {
-            Jenkins jenkins = Jenkins.get();
-            if ((context == jenkins && !jenkins.hasPermission(Computer.CREATE)) ||
-                (context != jenkins && !context.hasPermission(Computer.CONFIGURE))) {
-                return new StandardUsernameListBoxModel().includeCurrentValue(credentialsId);
-            }
-            try {
-                // TODO shibel: a number format exception was possible when the port is specified
-                //  but is not possible anymore, so check whether to catch here at all, and what.
-
-                //                int portValue = Integer.parseInt(port);
-                return new StandardUsernameListBoxModel()
-                        .includeMatchingAs(ACL.SYSTEM, jenkins, StandardUsernameCredentials.class,
-                                           Collections.singletonList(new DomainRequirement()),
-                                           SSHAuthenticator.matcher(Connection.class)).includeCurrentValue(
-                                credentialsId); // always add the current value last in case already present
-            }
-            catch (NumberFormatException ex) {
-                return new StandardUsernameListBoxModel().includeCurrentValue(credentialsId);
-            }
-        }
     }
     //endregion
 
-    //region Helper Methods
-    public StandardUsernameCredentials getCredentials() {
-        String credentialsId =
-                this.credentialsId == null ? (this.credentials == null ? null : this.credentials.getId()) :
-                this.credentialsId;
-        try {
-            StandardUsernameCredentials credentials =
-                    credentialsId != null ? SSHLauncher.lookupSystemCredentials(credentialsId) : null;
-            if (credentials != null) {
-                this.credentials = credentials;
-                return credentials;
-            }
-        }
-        catch (Throwable t) {
-            // ignore
-        }
-
-        return this.credentials;
-    }
-
-    public static StandardUsernameCredentials lookupSystemCredentials(String credentialsId) {
-        return CredentialsMatchers.firstOrNull(CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
-                                                                                     Jenkins.get(), ACL.SYSTEM,
-                                                                                     SSH_SCHEME),
-                                               CredentialsMatchers.withId(credentialsId));
-    }
-    //endregion
 }

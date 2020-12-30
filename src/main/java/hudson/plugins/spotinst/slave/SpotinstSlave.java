@@ -209,7 +209,8 @@ public class SpotinstSlave extends Slave {
             if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
                 // all that onInstanceReady does is remove from pending instances
                 this.getSpotinstCloud().onInstanceReady(getInstanceId());
-                LOGGER.info(String.format("Instance: %s removed from pending instances after termination", getInstanceId()));
+                LOGGER.info(String.format("Instance: %s removed from pending instances after termination",
+                                          getInstanceId()));
             }
 
         }
@@ -239,38 +240,63 @@ public class SpotinstSlave extends Slave {
 
     //region Private Methods
     private ComputerLauncher getLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
-        ComputerLauncher launcher   = null;
+        ComputerLauncher retVal;
         Boolean          isSSHCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
 
-        // TODO shibel: check for private IP preference
+
         if (isSSHCloud) {
-            boolean instanceHasPublicIp = instanceDetailsById != null && instanceDetailsById.getPublicIp() != null;
+            retVal = HandleSSHLauncher(instanceDetailsById);
+        }
+        else {
+            retVal = handleJNLPLauncher();
+        }
+        return retVal;
+    }
 
-            if (instanceHasPublicIp) {
-                //TODO shibel: investigate why catching InterruptedException is needed here, but not in other places.
-                try {
-                    launcher = new SpotSSHComputerLauncher(spotinstCloud.getComputerConnector()
-                                                                        .launch(instanceDetailsById.getPublicIp(),
-                                                                                TaskListener.NULL));
-                }
-                catch (InterruptedException e) {
-                    String preformatted =
-                            "Creating SSHComputerLauncher in SpotinstSlave constructor for instance %s was interrupted";
-                    LOGGER.error(String.format(preformatted, this.name));
-                }
+    private ComputerLauncher handleJNLPLauncher() {
+        ComputerLauncher launcher;
+        launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
+                                                this.spotinstCloud.getShouldUseWebsocket(),
+                                                this.spotinstCloud.getShouldRetriggerBuilds());
+        return launcher;
+    }
 
+    private ComputerLauncher HandleSSHLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
+        ComputerLauncher  retVal     = null;
+        BaseSpotinstCloud cloud      = this.getSpotinstCloud();
+        String            instanceId = this.name;
+        String            ipAddress;
+
+        if (instanceDetailsById == null) {
+            LOGGER.info(String.format(
+                    "no details about instance %s in instanceDetailsById map, not initializing launcher yet.",
+                    this.name));
+            return null;
+        }
+
+        if (cloud.getShouldUsePrivateIp()) {
+            ipAddress = instanceDetailsById.getPrivateIp();
+        }
+        else {
+            ipAddress = instanceDetailsById.getPublicIp();
+        }
+
+        if (ipAddress != null) {
+            try {
+                retVal = new SpotSSHComputerLauncher(this.spotinstCloud.getComputerConnector()
+                                                                       .launch(instanceDetailsById.getPublicIp(),
+                                                                               TaskListener.NULL));
             }
-            else {
-                LOGGER.info(
-                        String.format("SSH-connecting instance %s does not have an IP yet, keeping launcher as null for now.", this.name));
+            catch (InterruptedException e) {
+                String preformatted = "Creating SSHComputerLauncher for SpotinstSlave (instance %s) was interrupted";
+                LOGGER.error(String.format(preformatted, instanceId));
             }
         }
         else {
-            launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
-                                                    this.spotinstCloud.getShouldUseWebsocket(),
-                                                    this.spotinstCloud.getShouldRetriggerBuilds());
+            String preformatted = "SSH-cloud instance %s does not have an IP yet, setting launcher to null for now.";
+            LOGGER.info(String.format(preformatted, instanceId));
         }
-        return launcher;
+        return retVal;
     }
     //endregion
 

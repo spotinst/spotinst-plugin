@@ -307,8 +307,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         }
     }
 
-    // TODO shibel: consider with Ohad: should we add this to other clouds?
-    // probably not for now
     private void terminateOfflineSlaves(SpotinstSlave slave, String slaveInstanceId) {
         SlaveComputer computer = slave.getComputer();
 
