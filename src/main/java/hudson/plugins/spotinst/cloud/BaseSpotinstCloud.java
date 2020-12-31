@@ -32,25 +32,25 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
 
-    protected           String                            accountId;
-    protected           String                            groupId;
-    protected           Map<String, PendingInstance>      pendingInstances;
-    protected           Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
-    private             String                            labelString;
-    private             String                            idleTerminationMinutes;
-    private             String                            workspaceDir;
-    private             Set<LabelAtom>                    labelSet;
-    private             SlaveUsageEnum                    usage;
-    private             String                            tunnel;
-    private             String                            vmargs;
-    private             EnvironmentVariablesNodeProperty  environmentVariables;
-    private             ToolLocationNodeProperty          toolLocations;
-    private             Boolean                           shouldUseWebsocket;
-    private             Boolean                           shouldRetriggerBuilds;
-    private             ComputerConnector                 computerConnector;
-    private             ConnectionMethodEnum              connectionMethod;
-    private             String                            credentialsId;
-    private             Boolean                           shouldUsePrivateIp;
+    protected String                            accountId;
+    protected String                            groupId;
+    protected Map<String, PendingInstance>      pendingInstances;
+    protected Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
+    private   String                            labelString;
+    private   String                            idleTerminationMinutes;
+    private   String                            workspaceDir;
+    private   Set<LabelAtom>                    labelSet;
+    private   SlaveUsageEnum                    usage;
+    private   String                            tunnel;
+    private   String                            vmargs;
+    private   EnvironmentVariablesNodeProperty  environmentVariables;
+    private   ToolLocationNodeProperty          toolLocations;
+    private   Boolean                           shouldUseWebsocket;
+    private   Boolean                           shouldRetriggerBuilds;
+    private   ComputerConnector                 computerConnector;
+    private   ConnectionMethodEnum              connectionMethod;
+    private   String                            credentialsId;
+    private   Boolean                           shouldUsePrivateIp;
     //endregion
 
     //region Constructor
@@ -189,10 +189,11 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     private void checkIpsForSSHAgents(Map<String, PendingInstance> pendingInstances) {
-
+        LOGGER.info("Checking for offline SSH agents waiting to connect");
         List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
 
         if (offlineAgents.size() > 0) {
+            LOGGER.info("%s offline SSH agent(s) currently waiting to connect");
             Map<String, String> instanceIpById = getInstanceIpsById();
 
             for (SpotinstSlave offlineAgent : offlineAgents) {
@@ -200,7 +201,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 String ipForAgent = instanceIpById.get(agentName);
 
                 if (ipForAgent != null) {
-                    String preFormat = "IP for agent %s is now available at %s, trying to attach SSHLauncher and launch";
+                    String preFormat =
+                            "IP for agent %s is now available at %s, trying to attach SSHLauncher and launch";
                     LOGGER.info(String.format(preFormat, agentName, ipForAgent));
                     //TODO shibel: handle failures better
                     connectAgent(offlineAgent, ipForAgent);
@@ -222,29 +224,26 @@ public abstract class BaseSpotinstCloud extends Cloud {
         if (computerForAgent != null) {
             ComputerConnector connector = getComputerConnector();
 
-
             // TODO shibel: check this logic more thoroughly - can we connect a JNLP launcher here by mistake?
-            if (computerForAgent.getLauncher() == null ||
-                computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+            //            if (computerForAgent.getLauncher() == null ||
+            //                computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
 
+            if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+
+                // TODO shibel: ask Ohad, do we want to expose those logs?
+                // naturally the first 1-2 attempts will fail
+                // because instance is still initiating / Java isn't installed yet
                 try {
-                    SpotSSHComputerLauncher launcher = new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()));
-
+                    SpotSSHComputerLauncher launcher =
+                            new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()));
                     offlineAgent.setLauncher(launcher);
-                    // TODO shibel: ask Ohad, do we want to expose those logs?
-                    // naturally the first 1-2 attempts will fail
-                    // because instance is still initiating / Java isn't installed yet
                     launcher.launch(computerForAgent, computerForAgent.getListener());
-
 
                 }
                 catch (IOException | InterruptedException e) {
                     // TODO shibel: handle better
-                    LOGGER.error(e.getCause().toString());
-                    LOGGER.error(e.getMessage());
                     e.printStackTrace();
                 }
-
             }
         }
     }
@@ -268,6 +267,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 SpotinstComputer computerForAgent = (SpotinstComputer) agent.getComputer();
 
                 if (computerForAgent == null) {
+                    // TODO shibel ask Ohad: I noticed that sometimes agents will launch without
+                    // computers for some reason, should we remove them proactively?
                     LOGGER.warn(String.format("Agent %s does not have a computer", instanceId));
                     continue;
                 }
@@ -276,7 +277,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     LOGGER.info(String.format("Agent %s is already online, no need to handle", instanceId));
                 }
                 else {
-
                     if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
                         retVal.add(agent);
                     }

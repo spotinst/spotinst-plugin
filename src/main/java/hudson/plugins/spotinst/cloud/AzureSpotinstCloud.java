@@ -110,7 +110,10 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
                         Collectors.toMap(AzureGroupInstance::getInstanceId, AzureGroupInstance::getPublicIp));
             }
         }
-        //TODO shibel: handle else clause
+        else {
+            LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
+                                       instancesResponse.getErrors()));
+        }
 
         return retVal;
     }

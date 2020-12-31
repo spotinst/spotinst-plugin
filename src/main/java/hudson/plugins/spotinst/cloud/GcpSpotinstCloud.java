@@ -165,7 +165,10 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
                         Collectors.toMap(GcpGroupInstance::getInstanceName, GcpGroupInstance::getPublicIpAddress));
             }
         }
-        //TODO shibel: handle else clause
+        else {
+            LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
+                                       instancesResponse.getErrors()));
+        }
 
         return retVal;
     }
