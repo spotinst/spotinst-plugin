@@ -549,6 +549,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Abstract Class
+    @SuppressWarnings("unused")
     public static abstract class DescriptorImpl extends Descriptor<Cloud> {
         public DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> getToolDescriptors() {
             return ToolInstallation.all();
