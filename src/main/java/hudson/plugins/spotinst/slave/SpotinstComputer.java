@@ -1,5 +1,7 @@
 package hudson.plugins.spotinst.slave;
 
+import hudson.model.Node;
+import hudson.slaves.ComputerLauncher;
 import hudson.slaves.SlaveComputer;
 import org.kohsuke.stapler.HttpRedirect;
 import org.kohsuke.stapler.HttpResponse;
@@ -57,5 +59,20 @@ public class SpotinstComputer extends SlaveComputer {
             return HttpResponses.error(500, ex);
         }
     }
+
+
+    /**
+     * For SSH-connecting clouds, we initiate a {@link SpotinstComputer} before we have a valid SSH launcher and
+     * Jenkins doesn't auto-sync the computer's launcher with its corresponding {@link SpotinstSlave} launcher.
+     * {@link hudson.model.Computer#setNode(Node)} calls a {@link SlaveComputer#grabLauncher(Node)} which will perform
+     * the required update.
+     */
+    public void resyncNode() {
+        SpotinstSlave node = this.getNode();
+        if (node != null) {
+            this.setNode(node);
+        }
+    }
+
     //endregion
 }

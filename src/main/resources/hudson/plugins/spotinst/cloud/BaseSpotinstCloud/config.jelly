@@ -23,9 +23,7 @@
         <f:enum>${it.name()}</f:enum>
     </f:entry>
 
-    // TODO shibel: stylize better
-    <f:section title="Connection to Agents">
-        <f:radioBlock checked="${instance == null || instance.connectionMethod == null || instance.connectionMethod == 'JNLP'}" name="connectionMethod" title="JNLP" value="JNLP" inline="true">
+        <f:radioBlock checked="${instance == null || instance.connectionMethod == null || instance.connectionMethod == 'JNLP'}" name="connectionMethod" title="Connect with JNLP" value="JNLP" inline="true">
             <f:entry title="${%Tunnel connection through}" field="tunnel">
               <f:textbox />
             </f:entry>
@@ -34,7 +32,7 @@
             </f:entry>
         </f:radioBlock>
 
-        <f:radioBlock checked="${instance.connectionMethod == 'SSH_OR_COMMAND'}" name="connectionMethod" title="SSH" value="SSH_OR_COMMAND" inline="true">
+        <f:radioBlock checked="${instance.connectionMethod == 'SSH_OR_COMMAND'}" name="connectionMethod" title="Connect with SSH" value="SSH_OR_COMMAND" inline="true">
           <f:entry title="Use Private IP" field="shouldUsePrivateIp" id="usePrivateIP">
             <f:checkbox checked="${(instance != null) &amp;&amp; (instance.shouldUsePrivateIp)}"/>
           </f:entry>
@@ -42,9 +40,8 @@
            <f:dropdownDescriptorSelector field="computerConnector" descriptors="${descriptor.getComputerConnectorDescriptors()}" />
           </f:entry>
         </f:radioBlock>
-    </f:section>
-    <f:entry><p>${instance.getComputerConnector}</p></f:entry>
-    <f:entry><span style="display:block; margin-bottom: 2em;"></span></f:entry>
+
+    <f:entry><span style="display:block; margin-bottom: 0.5em;"></span></f:entry>
 
 
 

@@ -58,8 +58,6 @@ public class SpotinstSlave extends Slave {
         this.workspaceDir = workspaceDir;
         this.usage = SlaveUsageEnum.fromMode(mode);
         this.createdAt = new Date();
-
-
         groupUrl = spotinstCloud.getCloudUrl();
     }
     //endregion
@@ -283,9 +281,9 @@ public class SpotinstSlave extends Slave {
 
         if (ipAddress != null) {
             try {
-                retVal = new SpotSSHComputerLauncher(this.spotinstCloud.getComputerConnector()
-                                                                       .launch(instanceDetailsById.getPublicIp(),
-                                                                               TaskListener.NULL));
+                Boolean shouldRetriggerBuils = cloud.getShouldRetriggerBuilds();
+                retVal = new SpotSSHComputerLauncher(
+                        cloud.getComputerConnector().launch(instanceDetailsById.getPublicIp(), TaskListener.NULL), shouldRetriggerBuils);
             }
             catch (InterruptedException e) {
                 String preformatted = "Creating SSHComputerLauncher for SpotinstSlave (instance %s) was interrupted";

@@ -183,7 +183,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
                 }
             }
-
+            // TODO shibel: consider with Ohad - the launch() method on the computer is a blocking process
+            //  Are we OK with that? sometimes the monitor process takes more than 30 secs.
             checkIpsForSSHAgents(pendingInstances);
         }
     }
@@ -193,6 +194,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
 
         if (offlineAgents.size() > 0) {
+            // TODO shibel: format this
             LOGGER.info("%s offline SSH agent(s) currently waiting to connect");
             Map<String, String> instanceIpById = getInstanceIpsById();
 
@@ -204,7 +206,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     String preFormat =
                             "IP for agent %s is now available at %s, trying to attach SSHLauncher and launch";
                     LOGGER.info(String.format(preFormat, agentName, ipForAgent));
-                    //TODO shibel: handle failures better
                     connectAgent(offlineAgent, ipForAgent);
                 }
                 else {
@@ -214,13 +215,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
             }
         }
         else {
+            // TODO shibel: fix this to not imply that terminated instances are not waiting
             LOGGER.info("There are no offline SSH agents waiting to connect");
         }
     }
 
     private void connectAgent(SpotinstSlave offlineAgent, String ipForAgent) {
-        SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.getComputer();
-
+        SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.toComputer();
         if (computerForAgent != null) {
             ComputerConnector connector = getComputerConnector();
 
@@ -230,18 +231,19 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
             if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
 
-                // TODO shibel: ask Ohad, do we want to expose those logs?
-                // naturally the first 1-2 attempts will fail
-                // because instance is still initiating / Java isn't installed yet
                 try {
                     SpotSSHComputerLauncher launcher =
-                            new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()));
+                            new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
+                                                        this.getShouldRetriggerBuilds());
+
                     offlineAgent.setLauncher(launcher);
-                    launcher.launch(computerForAgent, computerForAgent.getListener());
+                    computerForAgent.resyncNode();
+                    computerForAgent.connect(false);
 
                 }
                 catch (IOException | InterruptedException e) {
-                    // TODO shibel: handle better
+                    String preFormatted = "Error while launching agent %s with a newly assigned IP %s";
+                    LOGGER.error(String.format(preFormatted, offlineAgent.getNodeName(), ipForAgent));
                     e.printStackTrace();
                 }
             }
@@ -268,7 +270,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
                 if (computerForAgent == null) {
                     // TODO shibel ask Ohad: I noticed that sometimes agents will launch without
-                    // computers for some reason, should we remove them proactively?
+                    //  computers for some reason, should we remove them proactively here?
                     LOGGER.warn(String.format("Agent %s does not have a computer", instanceId));
                     continue;
                 }
