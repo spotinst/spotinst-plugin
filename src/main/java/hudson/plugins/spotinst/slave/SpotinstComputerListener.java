@@ -3,18 +3,13 @@ package hudson.plugins.spotinst.slave;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.*;
-import hudson.model.queue.SubTask;
-import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.OfflineCause;
-import org.apache.commons.lang.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.rmi.UnexpectedException;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by ohadmuchnik on 25/05/2016.

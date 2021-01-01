@@ -61,7 +61,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                              Boolean shouldUsePrivateIp) {
-        // TODO shibel: check descriptorOrg in branch ssh-research
 
         super(groupId);
         this.groupId = groupId;
@@ -183,8 +182,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
                 }
             }
-            // TODO shibel: consider with Ohad - the launch() method on the computer is a blocking process
-            //  Are we OK with that? sometimes the monitor process takes more than 30 secs.
             checkIpsForSSHAgents(pendingInstances);
         }
     }
@@ -194,8 +191,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
         List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
 
         if (offlineAgents.size() > 0) {
-            // TODO shibel: format this
-            LOGGER.info("%s offline SSH agent(s) currently waiting to connect");
+            LOGGER.info(String.format("%s offline SSH agent(s) currently waiting to connect", offlineAgents.size()));
+
             Map<String, String> instanceIpById = getInstanceIpsById();
 
             for (SpotinstSlave offlineAgent : offlineAgents) {
@@ -215,8 +212,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
             }
         }
         else {
-            // TODO shibel: fix this to not imply that terminated instances are not waiting
-            LOGGER.info("There are no offline SSH agents waiting to connect");
+            LOGGER.info("There are no newly-launched SSH agents that are waiting to connect");
         }
     }
 
@@ -269,8 +265,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 SpotinstComputer computerForAgent = (SpotinstComputer) agent.getComputer();
 
                 if (computerForAgent == null) {
-                    // TODO shibel ask Ohad: I noticed that sometimes agents will launch without
-                    //  computers for some reason, should we remove them proactively here?
                     LOGGER.warn(String.format("Agent %s does not have a computer", instanceId));
                     continue;
                 }
