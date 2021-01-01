@@ -64,12 +64,13 @@ public class SpotinstComputer extends SlaveComputer {
     /**
      * For SSH-connecting clouds, we initiate a {@link SpotinstComputer} before we
      * have a valid SSH-launcher and Jenkins doesn't auto-sync the computer's launcher
-     * (JNLP by default) with its corresponding {@link SpotinstSlave} launcher.
+     * (JNLP by default) when its corresponding {@link SpotinstSlave} launcher is updated.
      * {@link hudson.model.Computer#setNode(Node)} calls {@link SlaveComputer#grabLauncher(Node)}
      * which will perform the required update.
      */
     public void resyncNode() {
         SpotinstSlave node = this.getNode();
+
         if (node != null) {
             this.setNode(node);
         }

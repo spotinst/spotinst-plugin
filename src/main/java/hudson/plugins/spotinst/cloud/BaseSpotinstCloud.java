@@ -218,6 +218,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     private void connectAgent(SpotinstSlave offlineAgent, String ipForAgent) {
         SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.toComputer();
+
         if (computerForAgent != null) {
             ComputerConnector connector = getComputerConnector();
 
@@ -226,14 +227,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
             //                computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
 
             if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
-
                 try {
                     SpotSSHComputerLauncher launcher =
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
                                                         this.getShouldRetriggerBuilds());
 
                     offlineAgent.setLauncher(launcher);
-                    computerForAgent.resyncNode();
+                    computerForAgent.resyncNode(offlineAgent);
                     computerForAgent.connect(false);
 
                 }
