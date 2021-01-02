@@ -102,12 +102,14 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
             List<AzureGroupInstance> instances = instancesResponse.getValue();
 
             if (this.getShouldUsePrivateIp()) {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(AzureGroupInstance::getInstanceId, AzureGroupInstance::getPrivateIp));
+                for (AzureGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceId(), instance.getPrivateIp());
+                }
             }
             else {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(AzureGroupInstance::getInstanceId, AzureGroupInstance::getPublicIp));
+                for (AzureGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceId(), instance.getPublicIp());
+                }
             }
         }
         else {

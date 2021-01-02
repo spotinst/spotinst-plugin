@@ -8,10 +8,7 @@ import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.slave.*;
-import hudson.slaves.Cloud;
-import hudson.slaves.ComputerConnector;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
-import hudson.slaves.NodeProperty;
+import hudson.slaves.*;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
@@ -27,6 +24,14 @@ import java.util.*;
 /**
  * Created by ohadmuchnik on 25/05/2016.
  */
+
+// TODO shibel: consult on what's the desired behaviour when a
+//  switch in connectionMethod happens on existing clouds. Currently it can work seamlessly if
+//    1. modify Elastigroup startup-script for SSH workflow, do NOT roll/deploy group
+//    2. modify corresponding cloud to connect with SSH
+//    3. Newly launched agents will use new connection method
+
+// TODO shibel: advise on strict folder dependency (/var/jenkins/) must be specified.
 public abstract class BaseSpotinstCloud extends Cloud {
 
     //region Members
@@ -220,20 +225,19 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.toComputer();
 
         if (computerForAgent != null) {
-            ComputerConnector connector = getComputerConnector();
+            ComputerConnector connector        = getComputerConnector();
+            ComputerLauncher  computerLauncher = computerForAgent.getLauncher();
 
-            // TODO shibel: check this logic more thoroughly - can we connect a JNLP launcher here by mistake?
-            //            if (computerForAgent.getLauncher() == null ||
-            //                computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
-
-            if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+            if (computerLauncher == null || computerLauncher.getClass() != SpotinstComputerLauncher.class) {
                 try {
                     SpotSSHComputerLauncher launcher =
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
                                                         this.getShouldRetriggerBuilds());
 
                     offlineAgent.setLauncher(launcher);
-                    computerForAgent.resyncNode(offlineAgent);
+                    // TODO shibel: consider if/how we can unify this code and the one in SpotinstSlave
+                    // tell computer its node has been updated
+                    computerForAgent.resyncNode();
                     computerForAgent.connect(false);
 
                 }
@@ -494,6 +498,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public ConnectionMethodEnum getConnectionMethod() {
+        if (this.connectionMethod == null) {
+            return ConnectionMethodEnum.JNLP;
+        }
+
         return connectionMethod;
     }
 

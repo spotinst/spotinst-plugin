@@ -147,12 +147,14 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
             List<AzureGroupVm> instances = instancesResponse.getValue();
 
             if (this.getShouldUsePrivateIp()) {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(AzureGroupVm::getVmName, AzureGroupVm::getPrivateIp));
+                for (AzureGroupVm instance: instances) {
+                    retVal.put(instance.getVmName(), instance.getPrivateIp());
+                }
             }
             else {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(AzureGroupVm::getVmName, AzureGroupVm::getPublicIp));
+                for (AzureGroupVm instance: instances) {
+                    retVal.put(instance.getVmName(), instance.getPublicIp());
+                }
             }
         }
         else {

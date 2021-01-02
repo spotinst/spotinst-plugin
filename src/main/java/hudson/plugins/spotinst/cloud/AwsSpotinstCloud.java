@@ -167,12 +167,14 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
 
             if (this.getShouldUsePrivateIp()) {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(AwsGroupInstance::getInstanceId, AwsGroupInstance::getPrivateIp));
+                for (AwsGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceId(), instance.getPrivateIp());
+                }
             }
             else {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(AwsGroupInstance::getInstanceId, AwsGroupInstance::getPublicIp));
+                for (AwsGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceId(), instance.getPublicIp());
+                }
             }
         }
         else {

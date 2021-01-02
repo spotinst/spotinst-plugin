@@ -11,6 +11,7 @@ import javax.annotation.concurrent.ThreadSafe;
 /**
  * Created by Shibel Karmi Mansour on 30/12/2020.
  */
+// TODO shibel: I don't understand enough about this, consult with Ohad.
 @ThreadSafe
 public class SpotSSHComputerLauncher extends DelegatingComputerLauncher {
     //region Members

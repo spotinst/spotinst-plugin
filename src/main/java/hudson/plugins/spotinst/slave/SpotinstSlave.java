@@ -186,6 +186,7 @@ public class SpotinstSlave extends Slave {
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
+            removeIfInPending();
             try {
                 Jenkins.getInstance().removeNode(this);
             }
@@ -203,14 +204,7 @@ public class SpotinstSlave extends Slave {
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
-
-            if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
-                // all that onInstanceReady does is remove from pending instances
-                this.getSpotinstCloud().onInstanceReady(getInstanceId());
-                LOGGER.info(String.format("Instance: %s removed from pending instances after termination",
-                                          getInstanceId()));
-            }
-
+            removeIfInPending();
         }
         else {
             LOGGER.error(String.format("Failed to terminate instance: %s", getInstanceId()));
@@ -224,6 +218,15 @@ public class SpotinstSlave extends Slave {
         }
 
         return isTerminated;
+    }
+
+    private void removeIfInPending() {
+        if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
+            // all that onInstanceReady does is remove from pending instances
+            this.getSpotinstCloud().onInstanceReady(getInstanceId());
+            LOGGER.info(String.format("Instance: %s removed from pending instances after termination",
+                                      getInstanceId()));
+        }
     }
 
     public boolean isSlavePending() {

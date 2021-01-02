@@ -157,12 +157,14 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
             List<GcpGroupInstance> instances = instancesResponse.getValue();
 
             if (this.getShouldUsePrivateIp()) {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(GcpGroupInstance::getInstanceName, GcpGroupInstance::getPrivateIpAddress));
+                for (GcpGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceName(), instance.getPrivateIpAddress());
+                }
             }
             else {
-                retVal = instances.stream().collect(
-                        Collectors.toMap(GcpGroupInstance::getInstanceName, GcpGroupInstance::getPublicIpAddress));
+                for (GcpGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceName(), instance.getPublicIpAddress());
+                }
             }
         }
         else {
