@@ -88,9 +88,17 @@
             <version>1.8.4</version>
             <scope>test</scope>
         </dependency>
+        <!--TODO shibel: consult with Ohad on dependency conflict, etc... (this is an override to allow maven to decide between conflicts)-->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>trilead-api</artifactId>
+            <version>1.0.13</version>
+        </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ssh-slaves</artifactId>
+            <version>1.31.3</version>
+            <!--TODO shibel: consult with Ohad on dependency conflict, etc...-->
         </dependency>
 
     </dependencies>
