@@ -6,13 +6,10 @@ import hudson.slaves.DelegatingComputerLauncher;
 import hudson.slaves.SlaveComputer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Created by Shibel Karmi Mansour on 30/12/2020.
  */
-// TODO shibel: I don't understand enough about this, consult with Ohad.
-@ThreadSafe
 public class SpotSSHComputerLauncher extends DelegatingComputerLauncher {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(SpotSSHComputerLauncher.class);
@@ -28,9 +25,7 @@ public class SpotSSHComputerLauncher extends DelegatingComputerLauncher {
 
     @Override
     public void afterDisconnect(final SlaveComputer computer, final TaskListener listener) {
-        LOGGER.info("afterDisconnect SSH called");
         SpotLauncherHelper.handleDisconnect(computer, this.shouldRetriggerBuilds);
-
         // call parent
         super.afterDisconnect(computer, listener);
     }

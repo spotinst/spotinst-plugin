@@ -37,9 +37,7 @@ public class SpotinstComputerLauncher extends JNLPLauncher {
     //region Override Public Methods
     @Override
     public void afterDisconnect(final SlaveComputer computer, final TaskListener listener) {
-        LOGGER.info("afterDisconnect JNLP called");
         SpotLauncherHelper.handleDisconnect(computer, this.shouldRetriggerBuilds);
-
         // call parent
         super.afterDisconnect(computer, listener);
     }

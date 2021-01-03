@@ -24,14 +24,6 @@ import java.util.*;
 /**
  * Created by ohadmuchnik on 25/05/2016.
  */
-
-// TODO shibel: consult on what's the desired behaviour when a
-//  switch in connectionMethod happens on existing clouds. Currently it can work seamlessly if
-//    1. modify Elastigroup startup-script for SSH workflow, do NOT roll/deploy group
-//    2. modify corresponding cloud to connect with SSH
-//    3. Newly launched agents will use new connection method
-
-// TODO shibel: advise on strict folder dependency (/var/jenkins/) must be specified.
 public abstract class BaseSpotinstCloud extends Cloud {
 
     //region Members
@@ -235,7 +227,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                                                         this.getShouldRetriggerBuilds());
 
                     offlineAgent.setLauncher(launcher);
-                    // TODO shibel: consider if/how we can unify this code and the one in SpotinstSlave
                     // tell computer its node has been updated
                     computerForAgent.resyncNode();
                     computerForAgent.connect(false);

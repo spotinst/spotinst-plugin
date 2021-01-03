@@ -342,4 +342,19 @@ public class SpotinstCloudTest {
     }
     //endregion
 
+
+    //region SpotinstSalve
+    public void testSpotinstSlaveTermination_ifAgentInPendingInstances_thenAgentIsRemovedFromPendingInstances() {
+
+    }
+
+    public void testSpotinstSlaveTermination_ifAgentNotInPendingInstances_thenPendingInstancesRemainsUnchanged() {
+
+    }
+
+    //TODO shibel: check cloud defaults (connectionMethod especially)
+    //TODO shibel: check no reconnect is possible for agents already connecting
+    //TODO shibel: add conditional note (if launch isn't already in progress)
+    
+    //endregion
 }
