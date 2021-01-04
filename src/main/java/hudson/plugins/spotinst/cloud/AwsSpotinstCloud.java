@@ -294,8 +294,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                         // 1.is a group slave for this slave id; - trivial here
                         // 2.slave is offline
                         // 3.slave is not connecting
-                        // 4.slave is pending
-                        // 5.zombie threshold passed
+                        // 4.zombie threshold passed
 
                         terminateOfflineSlaves(slave, slaveInstanceId);
                     }
@@ -307,26 +306,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         }
     }
 
-    private void terminateOfflineSlaves(SpotinstSlave slave, String slaveInstanceId) {
-        SlaveComputer computer = slave.getComputer();
-
-        if (computer != null) {
-            Boolean isSlaveConnecting = computer.isConnecting();
-            Boolean isSlaveOffline    = computer.isOffline();
-
-            Integer offlineThreshold       = getSlaveOfflineThreshold();
-            Date    slaveCreatedAt         = slave.getCreatedAt();
-            Boolean isOverOfflineThreshold = TimeUtils.isTimePassed(slaveCreatedAt, offlineThreshold);
-
-            if (isSlaveOffline && isSlaveConnecting == false && isOverOfflineThreshold) {
-                LOGGER.info(String.format(
-                        "Slave for instance: %s running in group: %s is offline and created more than %d minutes ago (slave creation time: %s), terminating",
-                        slaveInstanceId, groupId, offlineThreshold, slaveCreatedAt));
-
-                slave.terminate();
-            }
-        }
-    }
 
     private List<String> getGroupInstanceAndSpotIds(List<AwsGroupInstance> elastigroupInstances) {
         List<String> retVal = new LinkedList<>();

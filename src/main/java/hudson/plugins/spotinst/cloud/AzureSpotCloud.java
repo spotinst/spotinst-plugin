@@ -209,6 +209,9 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
                         LOGGER.error(String.format("Failed to remove slave from group: %s", groupId), e);
                     }
                 }
+                else {
+                    terminateOfflineSlaves(slave, slaveInstanceId);
+                }
             }
         }
         else {
