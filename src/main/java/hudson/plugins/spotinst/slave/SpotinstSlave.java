@@ -1,11 +1,10 @@
 package hudson.plugins.spotinst.slave;
 
 import hudson.Extension;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Node;
-import hudson.model.Slave;
+import hudson.model.*;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
+import hudson.slaves.ComputerLauncher;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
@@ -41,19 +40,24 @@ public class SpotinstSlave extends Slave {
     public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, String tunnel, Boolean shouldUseWebsocket, String vmargs,
-                         List<NodeProperty<?>> nodeProperties, Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
-        super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label,
-              new SpotinstComputerLauncher(tunnel, vmargs, shouldUseWebsocket, shouldRetriggerBuilds),
+                         List<NodeProperty<?>> nodeProperties,
+                         Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
+
+
+        super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, null,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
+        this.spotinstCloud = spotinstCloud;
+        SlaveInstanceDetails instanceDetailsById = spotinstCloud.getSlaveDetails(this.name);
+        ComputerLauncher     launcher            = buildLauncher(instanceDetailsById);
+
+        this.setLauncher(launcher);
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
         this.instanceId = instanceId;
         this.workspaceDir = workspaceDir;
         this.usage = SlaveUsageEnum.fromMode(mode);
         this.createdAt = new Date();
-
-        this.spotinstCloud = spotinstCloud;
         groupUrl = spotinstCloud.getCloudUrl();
     }
     //endregion
@@ -182,6 +186,7 @@ public class SpotinstSlave extends Slave {
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
+            removeIfInPending();
             try {
                 Jenkins.getInstance().removeNode(this);
             }
@@ -199,6 +204,7 @@ public class SpotinstSlave extends Slave {
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
+            removeIfInPending();
         }
         else {
             LOGGER.error(String.format("Failed to terminate instance: %s", getInstanceId()));
@@ -214,6 +220,15 @@ public class SpotinstSlave extends Slave {
         return isTerminated;
     }
 
+    private void removeIfInPending() {
+        if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
+            // all that onInstanceReady does is remove from pending instances
+            this.getSpotinstCloud().onInstanceReady(getInstanceId());
+            LOGGER.info(
+                    String.format("Instance: %s removed from pending instances after termination", getInstanceId()));
+        }
+    }
+
     public boolean isSlavePending() {
         boolean retVal = this.spotinstCloud.isInstancePending(getNodeName());
         return retVal;
@@ -223,6 +238,73 @@ public class SpotinstSlave extends Slave {
         this.spotinstCloud.onInstanceReady(getNodeName());
     }
     //endregion
+
+    //region Private Methods
+    private ComputerLauncher buildLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
+        ComputerLauncher retVal;
+        Boolean isSshCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
+
+
+        if (isSshCloud) {
+            retVal = HandleSSHLauncher(instanceDetailsById);
+        }
+        else {
+            retVal = handleJNLPLauncher();
+        }
+        return retVal;
+    }
+
+    private ComputerLauncher handleJNLPLauncher() {
+        ComputerLauncher launcher;
+        launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
+                                                this.spotinstCloud.getShouldUseWebsocket(),
+                                                this.spotinstCloud.getShouldRetriggerBuilds());
+        return launcher;
+    }
+
+    private ComputerLauncher HandleSSHLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
+        ComputerLauncher  retVal     = null;
+        BaseSpotinstCloud cloud      = this.getSpotinstCloud();
+        String            instanceId = this.name;
+        String            ipAddress;
+
+        if (instanceDetailsById == null) {
+            LOGGER.info(String.format(
+                    "no details about instance %s in instanceDetailsById map, not initializing launcher yet.",
+                    this.name));
+            return null;
+        }
+
+        if (cloud.getShouldUsePrivateIp()) {
+            ipAddress = instanceDetailsById.getPrivateIp();
+        }
+        else {
+            ipAddress = instanceDetailsById.getPublicIp();
+        }
+
+        if (ipAddress != null) {
+            try {
+                // TODO shibel: fix this
+                Boolean shouldRetriggerBuilds = cloud.getShouldRetriggerBuilds();
+                retVal = new SpotSSHComputerLauncher(
+                        cloud.getComputerConnector().launch(instanceDetailsById.getPublicIp(), TaskListener.NULL),
+                        shouldRetriggerBuilds);
+                this.getSpotinstCloud().connectAgent(this, ipAddress);
+
+            }
+            catch (InterruptedException e) {
+                String preformatted = "Creating SSHComputerLauncher for SpotinstSlave (instance %s) was interrupted";
+                LOGGER.error(String.format(preformatted, instanceId));
+            }
+        }
+        else {
+            String preformatted = "SSH-cloud instance %s does not have an IP yet, setting launcher to null for now.";
+            LOGGER.info(String.format(preformatted, instanceId));
+        }
+        return retVal;
+    }
+    //endregion
+
 
     //region Extension class
     @Extension

@@ -5,6 +5,7 @@ import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewInstance;
@@ -12,9 +13,8 @@ import hudson.plugins.spotinst.model.aws.AwsScaleResultNewSpot;
 import hudson.plugins.spotinst.model.aws.AwsScaleUpResult;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
-import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
-import hudson.plugins.spotinst.slave.SlaveUsageEnum;
-import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.plugins.spotinst.slave.*;
+import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.SlaveComputer;
 import hudson.tools.ToolLocationNodeProperty;
@@ -43,10 +43,16 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
-                            String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs, EnvironmentVariablesNodeProperty environmentVariables,
-                            ToolLocationNodeProperty toolLocations, String accountId) {
-        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket, shouldRetriggerBuilds, vmargs, environmentVariables,
-              toolLocations, accountId);
+                            String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
+                            EnvironmentVariablesNodeProperty environmentVariables,
+                            ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                            ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                            Boolean shouldUsePrivateIp) {
+
+        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
+              connectionMethod, computerConnector, shouldUsePrivateIp);
+
         this.executorsForTypes = new LinkedList<>();
         executorsForInstanceType = new HashMap<>();
 
@@ -144,6 +150,35 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
                                        instancesResponse.getErrors()));
         }
+    }
+
+    @Override
+    public Map<String, String> getInstanceIpsById() {
+        Map<String, String> retVal = new HashMap<>();
+
+        IAwsGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+
+        if (instancesResponse.isRequestSucceed()) {
+            List<AwsGroupInstance> instances = instancesResponse.getValue();
+
+            if (this.getShouldUsePrivateIp()) {
+                for (AwsGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceId(), instance.getPrivateIp());
+                }
+            }
+            else {
+                for (AwsGroupInstance instance: instances) {
+                    retVal.put(instance.getInstanceId(), instance.getPublicIp());
+                }
+            }
+        }
+        else {
+            LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
+                                       instancesResponse.getErrors()));
+        }
+
+        return retVal;
     }
 
     @Override

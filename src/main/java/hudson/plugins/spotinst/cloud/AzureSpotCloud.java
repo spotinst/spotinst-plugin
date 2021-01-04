@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureGroupVm;
 import hudson.plugins.spotinst.model.azure.AzureScaleUpResultNewVm;
@@ -13,6 +14,7 @@ import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
 import hudson.plugins.spotinst.slave.SlaveUsageEnum;
 import hudson.plugins.spotinst.slave.SpotinstSlave;
+import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
@@ -38,10 +40,12 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     public AzureSpotCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                           SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                           Boolean shouldRetriggerBuilds, String vmargs,
-                          EnvironmentVariablesNodeProperty environmentVariables,
-                          ToolLocationNodeProperty toolLocations, String accountId) {
+                          EnvironmentVariablesNodeProperty environmentVariables, ToolLocationNodeProperty toolLocations,
+                          String accountId, String credentialsId, ConnectionMethodEnum connectionMethod,
+                          ComputerConnector computerConnector, Boolean shouldUsePrivateIp) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId);
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
+              connectionMethod, computerConnector, shouldUsePrivateIp);
     }
     //endregion
 
@@ -128,6 +132,35 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
                                        instancesResponse.getErrors()));
         }
+    }
+
+    @Override
+    public Map<String, String> getInstanceIpsById() {
+        Map<String, String> retVal = new HashMap<>();
+
+        IAzureVmGroupRepo                   awsGroupRepo      = RepoManager.getInstance().getAzureVmGroupRepo();
+        ApiResponse<List<AzureGroupVm>> instancesResponse = awsGroupRepo.getGroupVms(groupId, this.accountId);
+
+        if (instancesResponse.isRequestSucceed()) {
+            List<AzureGroupVm> instances = instancesResponse.getValue();
+
+            if (this.getShouldUsePrivateIp()) {
+                for (AzureGroupVm instance: instances) {
+                    retVal.put(instance.getVmName(), instance.getPrivateIp());
+                }
+            }
+            else {
+                for (AzureGroupVm instance: instances) {
+                    retVal.put(instance.getVmName(), instance.getPublicIp());
+                }
+            }
+        }
+        else {
+            LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
+                                       instancesResponse.getErrors()));
+        }
+
+        return retVal;
     }
     //endregion
 

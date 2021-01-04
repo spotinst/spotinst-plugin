@@ -1,19 +1,14 @@
 package hudson.plugins.spotinst.cloud;
 
 import hudson.DescriptorExtensionList;
-import hudson.model.Descriptor;
-import hudson.model.Label;
-import hudson.model.Node;
+import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
+import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.TimeUtils;
-import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
-import hudson.plugins.spotinst.slave.SlaveUsageEnum;
-import hudson.plugins.spotinst.slave.SpotinstSlave;
-import hudson.slaves.Cloud;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
-import hudson.slaves.NodeProperty;
+import hudson.plugins.spotinst.slave.*;
+import hudson.slaves.*;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
@@ -49,6 +44,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   ToolLocationNodeProperty          toolLocations;
     private   Boolean                           shouldUseWebsocket;
     private   Boolean                           shouldRetriggerBuilds;
+    private   ComputerConnector                 computerConnector;
+    private   ConnectionMethodEnum              connectionMethod;
+    private   String                            credentialsId;
+    private   Boolean                           shouldUsePrivateIp;
     //endregion
 
     //region Constructor
@@ -56,7 +55,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                              Boolean shouldRetriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
-                             ToolLocationNodeProperty toolLocations, String accountId) {
+                             ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                             Boolean shouldUsePrivateIp) {
+
         super(groupId);
         this.groupId = groupId;
         this.accountId = accountId;
@@ -80,9 +82,25 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.environmentVariables = environmentVariables;
         this.toolLocations = toolLocations;
         this.slaveInstancesDetailsByInstanceId = new HashMap<>();
+
+        if (connectionMethod != null) {
+            this.connectionMethod = connectionMethod;
+        }
+        else {
+            this.connectionMethod = ConnectionMethodEnum.JNLP;
+        }
+
+        if (shouldUsePrivateIp != null) {
+            this.shouldUsePrivateIp = shouldUsePrivateIp;
+        }
+        else {
+            this.shouldUsePrivateIp = false;
+        }
+
+
+        this.computerConnector = computerConnector;
+        this.credentialsId = credentialsId;
     }
-
-
     //endregion
 
     //region Overridden Public Methods
@@ -176,7 +194,108 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
                 }
             }
+            checkIpsForSSHAgents(pendingInstances);
         }
+    }
+
+    private void checkIpsForSSHAgents(Map<String, PendingInstance> pendingInstances) {
+        LOGGER.info("Checking for offline SSH agents waiting to connect");
+        List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
+
+        if (offlineAgents.size() > 0) {
+            LOGGER.info(String.format("%s offline SSH agent(s) currently waiting to connect", offlineAgents.size()));
+
+            Map<String, String> instanceIpById = getInstanceIpsById();
+
+            for (SpotinstSlave offlineAgent : offlineAgents) {
+                String agentName  = offlineAgent.getNodeName();
+                String ipForAgent = instanceIpById.get(agentName);
+
+                if (ipForAgent != null) {
+                    String preFormat =
+                            "IP for agent %s is available at %s, trying to attach SSHLauncher and launch";
+                    LOGGER.info(String.format(preFormat, agentName, ipForAgent));
+                    connectAgent(offlineAgent, ipForAgent);
+                }
+                else {
+                    String preFormat = "IP for agent %s is still null, not attaching SSH launcher";
+                    LOGGER.info(String.format(preFormat, agentName));
+                }
+            }
+        }
+        else {
+            LOGGER.info("There are no newly-created SSH agents that are waiting to connect");
+        }
+    }
+
+    public void connectAgent(SpotinstSlave offlineAgent, String ipForAgent) {
+        SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.toComputer();
+
+        if (computerForAgent != null) {
+            ComputerConnector connector        = getComputerConnector();
+            ComputerLauncher  computerLauncher = computerForAgent.getLauncher();
+
+            if (computerLauncher == null || computerLauncher.getClass() != SpotinstComputerLauncher.class) {
+                try {
+                    SpotSSHComputerLauncher launcher =
+                            new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
+                                                        this.getShouldRetriggerBuilds());
+
+                    offlineAgent.setLauncher(launcher);
+                    // tell computer its node has been updated
+                    computerForAgent.resyncNode();
+                    computerForAgent.connect(false);
+
+                }
+                catch (IOException | InterruptedException e) {
+                    String preFormatted = "Error while launching agent %s with a newly assigned IP %s";
+                    LOGGER.error(String.format(preFormatted, offlineAgent.getNodeName(), ipForAgent));
+                    e.printStackTrace();
+                }
+            }
+        }
+        else {
+            String preFormatted = "Agent %s does not have a computer";
+            LOGGER.warn(String.format(preFormatted, offlineAgent.getNodeName()));
+        }
+    }
+
+    private List<SpotinstSlave> getOfflineSSHAgents(Map<String, PendingInstance> pendingInstances) {
+        List<SpotinstSlave> retVal = new LinkedList<>();
+
+        if (pendingInstances.size() > 0) {
+            List<String> keys = new LinkedList<>(pendingInstances.keySet());
+
+            for (String key : keys) {
+                PendingInstance pendingInstance = pendingInstances.get(key);
+                String          instanceId      = pendingInstance.getId();
+                SpotinstSlave   agent           = (SpotinstSlave) Jenkins.get().getNode(instanceId);
+
+                if (agent == null) {
+                    LOGGER.warn(String.format("Pending instance %s does not have a SpotinstSlave", instanceId));
+                    continue;
+                }
+
+                SpotinstComputer computerForAgent = (SpotinstComputer) agent.getComputer();
+
+                if (computerForAgent == null) {
+                    LOGGER.warn(String.format("Agent %s does not have a computer", instanceId));
+                    continue;
+                }
+
+                if (computerForAgent.isOnline()) {
+                    LOGGER.info(String.format("Agent %s is already online, no need to handle", instanceId));
+                }
+                else {
+                    if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
+                        retVal.add(agent);
+                    }
+                }
+
+            }
+        }
+
+        return retVal;
     }
 
     public SlaveInstanceDetails getSlaveDetails(String instanceId) {
@@ -388,6 +507,47 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.shouldRetriggerBuilds = shouldRetriggerBuilds;
     }
 
+    public ConnectionMethodEnum getConnectionMethod() {
+        if (this.connectionMethod == null) {
+            return ConnectionMethodEnum.JNLP;
+        }
+
+        return connectionMethod;
+    }
+
+    public void setConnectionMethod(ConnectionMethodEnum connectionMethod) {
+        this.connectionMethod = connectionMethod;
+    }
+
+
+    public ComputerConnector getComputerConnector() {
+        return computerConnector;
+    }
+
+    public void setComputerConnector(ComputerConnector computerConnector) {
+        this.computerConnector = computerConnector;
+    }
+
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
+    }
+
+    public Boolean getShouldUsePrivateIp() {
+        // default for clouds that were configured before introducing this field
+        if (shouldUsePrivateIp == null) {
+            return false;
+        }
+        return shouldUsePrivateIp;
+    }
+
+    public void setShouldUsePrivateIp(Boolean shouldUsePrivateIp) {
+        this.shouldUsePrivateIp = shouldUsePrivateIp;
+    }
     //endregion
 
     //region Abstract Methods
@@ -398,9 +558,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public abstract String getCloudUrl();
 
     public abstract void syncGroupInstances();
+
+    public abstract Map<String, String> getInstanceIpsById();
     //endregion
 
     //region Abstract Class
+    @SuppressWarnings("unused")
     public static abstract class DescriptorImpl extends Descriptor<Cloud> {
         public DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> getToolDescriptors() {
             return ToolInstallation.all();
@@ -408,6 +571,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         public String getKey(ToolInstallation installation) {
             return installation.getDescriptor().getClass().getName() + "@" + installation.getName();
+        }
+
+        public List getComputerConnectorDescriptors() {
+            return Jenkins.get().getDescriptorList(ComputerConnector.class);
         }
     }
     //endregion
