@@ -4,16 +4,12 @@ import hudson.model.*;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.DelegatingComputerLauncher;
 import hudson.slaves.SlaveComputer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by Shibel Karmi Mansour on 30/12/2020.
  */
 public class SpotSSHComputerLauncher extends DelegatingComputerLauncher {
     //region Members
-    //todo shibel - remove
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpotSSHComputerLauncher.class);
     private Boolean shouldRetriggerBuilds;
     //endregion
 

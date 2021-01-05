@@ -37,7 +37,9 @@ public class SpotinstSlave extends Slave {
     //endregion
 
     //region Constructor
-    //todo shibel - there are some unused params here
+    //todo x? shibel - there are some unused params here
+    // shibel answer: yes, I can pass them to buildLauncher but they are really properties of this
+    // instance's cloud. Honestly I'm not experienced enough to know what's the right approach here.
     public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, String tunnel, Boolean shouldUseWebsocket, String vmargs,
@@ -45,7 +47,9 @@ public class SpotinstSlave extends Slave {
                          Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
 
 
-        //todo sibel - shy using deprecated constructor?
+        //todo x? shibel - shy using deprecated constructor?
+        // done shibel answer: this has been there for a while and I was told (in previous works) not to touch anything
+        // major that already exists. I can refactor. We also use Jenkins.getInstance() for example, which is also deprecated.
         super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, null,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
@@ -222,13 +226,15 @@ public class SpotinstSlave extends Slave {
         return isTerminated;
     }
 
-    //todo shibel - the method name is remove bit you call here 'onInstanceReady' maybe iyt has the same logic but its not clear
+    //todo x shibel - the method name is remove bit you call here 'onInstanceReady' maybe iyt has the same logic but its not clear
+    // done shibel.
     private void removeIfInPending() {
-        if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
-            // all that onInstanceReady does is remove from pending instances
-            this.getSpotinstCloud().onInstanceReady(getInstanceId());
+        String instanceId = getInstanceId();
+
+        if (this.getSpotinstCloud().isInstancePending(instanceId)) {
+            this.getSpotinstCloud().removeInstanceFromPending(instanceId);
             LOGGER.info(
-                    String.format("Instance: %s removed from pending instances after termination", getInstanceId()));
+                    String.format("Instance: %s removed from pending instances after termination", instanceId));
         }
     }
 
@@ -243,7 +249,8 @@ public class SpotinstSlave extends Slave {
     //endregion
 
     //region Private Methods
-    //todo shibel - wht this logic is here? it should be in the Cloud that knoes if he is SSH or JNLP
+    //todo x? shibel - wht this logic is here? it should be in the Cloud that knoes if he is SSH or JNLP
+    // shibel question: are you talking about this method only, or the method it calls as well?
     private ComputerLauncher buildLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
         ComputerLauncher retVal;
         Boolean isSshCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
@@ -259,9 +266,9 @@ public class SpotinstSlave extends Slave {
     }
 
     private ComputerLauncher handleJNLPLauncher() {
-        //todo shibel - can be in one line
-        ComputerLauncher launcher;
-        launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
+        //todo x shibel - can be in one line
+        // shibel done.
+        ComputerLauncher launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
                                                 this.spotinstCloud.getShouldUseWebsocket(),
                                                 this.spotinstCloud.getShouldRetriggerBuilds());
         return launcher;
@@ -289,7 +296,6 @@ public class SpotinstSlave extends Slave {
 
         if (ipAddress != null) {
             try {
-                // TODO shibel: fix this
                 Boolean shouldRetriggerBuilds = cloud.getShouldRetriggerBuilds();
                 retVal = new SpotSSHComputerLauncher(
                         cloud.getComputerConnector().launch(instanceDetailsById.getPublicIp(), TaskListener.NULL),

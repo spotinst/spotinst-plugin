@@ -70,7 +70,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false, true, "", null,
-                                     null, null, null, null, null, null);
+                                     null, null, null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sir-1", buildPendingInstance("sir-1", PendingInstance.StatusEnum.PENDING, 2));
         spotinstCloud.setPendingInstances(pendingInstances);
@@ -84,7 +84,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         AwsSpotinstCloud spotinstCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false, true, "", null,
-                                     null, null, null, null, null, null);
+                                     null, null, null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sir-1", buildPendingInstance("sir-1", PendingInstance.StatusEnum.PENDING, 2));
         spotinstCloud.setPendingInstances(pendingInstances);
@@ -115,7 +115,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, null, null, false);
+                                     null, null, false);
 
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.JNLP);
 
@@ -149,7 +149,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
+                                     ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
 
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH_OR_COMMAND);
 
@@ -194,7 +194,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
+                                     ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
 
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH_OR_COMMAND);
 
@@ -243,7 +243,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, null, null, null);
+                                     null, null, null);
 
         assertEquals(spotCloud.getShouldUsePrivateIp(), false);
     }
@@ -253,7 +253,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, null, null, true);
+                                     null, null, true);
 
         assertEquals(spotCloud.getShouldUsePrivateIp(), true);
     }
@@ -263,7 +263,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, null, null, false);
+                                     null, null, false);
 
         assertEquals(spotCloud.getShouldUsePrivateIp(), false);
     }
@@ -274,7 +274,7 @@ public class SpotinstCloudTest {
     public void testGcpProvision_whenThereArePendingInsatcnesForAllExecutors_thenShouldNotSacleUp() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                      null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sin-1", buildPendingInstance("sin-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -288,7 +288,7 @@ public class SpotinstCloudTest {
     public void testGcpProvision_whenThereArePendingInsatcnesForPartOfTheExecutors_thenShouldSacleUpTheRest() {
         String groupId = "sig-1";
         GcpSpotinstCloud spotinstCloud =
-                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                      null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sin-1", buildPendingInstance("sin-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -321,7 +321,7 @@ public class SpotinstCloudTest {
     public void testAzureProvision_whenThereArePendingInsatcnesForAllExecutors_thenShouldNotSacleUp() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null, null,
+                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null,
                                        null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("q3213", buildPendingInstance(groupId, PendingInstance.StatusEnum.PENDING, 1));
@@ -336,7 +336,7 @@ public class SpotinstCloudTest {
     public void testAzureProvision_whenThereArePendingInsatcnesForPartOfTheExecutors_thenShouldSacleUpTheRest() {
         String groupId = "sig-1";
         AzureSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null, null,
+                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null,
                                        null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("asda", buildPendingInstance(groupId, PendingInstance.StatusEnum.PENDING, 1));
@@ -364,7 +364,7 @@ public class SpotinstCloudTest {
     public void testAzureV3Provision_whenThereArePendingInstancesForAllExecutors_thenShouldNotScaleUp() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                    null, null);
 
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
@@ -380,7 +380,7 @@ public class SpotinstCloudTest {
     public void testAzureV3Provision_whenThereArePendingInstancesForPartOfTheExecutors_thenShouldScaleUpTheRest() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                    null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -413,7 +413,7 @@ public class SpotinstCloudTest {
     public void testAzureV3Provision_whenUnrecognizedVmSize_thenDefaultTo1Executor() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                    null, null);
 
         AzureScaleUpResultNewVm newSpot = new AzureScaleUpResultNewVm();
@@ -438,7 +438,7 @@ public class SpotinstCloudTest {
     public void testAzureV3Provision_whenNewInstancesAreLaunched_thenTheirSizeIsAccountedForInNodes() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                    null, null);
 
         AzureVmSizeEnum vmSizeBasicA1 = AzureVmSizeEnum.BASIC_A1;
@@ -474,7 +474,7 @@ public class SpotinstCloudTest {
     public void testAzureV3Provision_whenNewInstancesAreLaunched_thenTheirSizeIsAccountedForInPendingInstances() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                    null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -511,7 +511,7 @@ public class SpotinstCloudTest {
     public void testAzureV3Cloud_whenNoConnectionMethodIsProvided_thenDefaultIsJNLP() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null,
                                    null, null);
 
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.JNLP);
@@ -543,11 +543,11 @@ public class SpotinstCloudTest {
 
     //region SpotinstSalve
     @Test
-    public void testSpotinstSlaveTermination_ifAgentInPendingInstances_thenAgentIsRemovedFromPendingInstances() throws IOException, Descriptor.FormException {
+    public void testSpotinstSlaveTermination_ifAgentInPendingInstances_thenAgentIsRemovedFromPendingInstances() {
         String groupId = "sig-1";
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     null, ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
+                                     ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
 
 
         AwsInstanceTypeEnum   vmSizeBasicA2 = AwsInstanceTypeEnum.C4Large;
@@ -578,8 +578,9 @@ public class SpotinstCloudTest {
         cloud.provision(null, 1);
 
         Boolean detachResult = true;
-        Mockito.when(RepoManager.getInstance().getAwsGroupRepo()
-                                .detachInstance(Mockito.anyString(), Mockito.anyString())).thenReturn(new ApiResponse<>(detachResult));
+        Mockito.when(
+                RepoManager.getInstance().getAwsGroupRepo().detachInstance(Mockito.anyString(), Mockito.anyString()))
+               .thenReturn(new ApiResponse<>(detachResult));
 
         SpotinstSlave agent = (SpotinstSlave) Jenkins.get().getNode(newSpot.getInstanceId());
 
@@ -599,7 +600,7 @@ public class SpotinstCloudTest {
     public void testAzureSpotinstCloud_DescriptorReturnsAzureSpotinstCloudString() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null, null,
+                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null,
                                        null, null, null);
 
         assertTrue(spotinstCloud.getDescriptor().toString().contains("AzureSpotinstCloud"));

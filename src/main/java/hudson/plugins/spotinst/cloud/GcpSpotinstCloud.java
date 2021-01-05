@@ -43,12 +43,12 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
                             SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                             Boolean shouldRetriggerBuilds, String vmargs,
                             EnvironmentVariablesNodeProperty environmentVariables,
-                            ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                            ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                             Boolean shouldUsePrivateIp) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
-              connectionMethod, computerConnector, shouldUsePrivateIp);
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              computerConnector, shouldUsePrivateIp);
     }
     //endregion
 
@@ -153,13 +153,11 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
         if (instancesResponse.isRequestSucceed()) {
             List<GcpGroupInstance> instances = instancesResponse.getValue();
 
-            if (this.getShouldUsePrivateIp()) {
-                for (GcpGroupInstance instance: instances) {
+            for (GcpGroupInstance instance : instances) {
+                if (this.getShouldUsePrivateIp()) {
                     retVal.put(instance.getInstanceName(), instance.getPrivateIpAddress());
                 }
-            }
-            else {
-                for (GcpGroupInstance instance: instances) {
+                else {
                     retVal.put(instance.getInstanceName(), instance.getPublicIpAddress());
                 }
             }

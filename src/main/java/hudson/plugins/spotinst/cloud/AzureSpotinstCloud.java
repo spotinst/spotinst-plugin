@@ -36,13 +36,15 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     //region Constructor
     @DataBoundConstructor
     public AzureSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
-                              SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
+                              SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
+                              Boolean shouldRetriggerBuilds, String vmargs,
                               EnvironmentVariablesNodeProperty environmentVariables,
-                              ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
-                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector, Boolean shouldUsePrivateIp) {
-        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket, shouldRetriggerBuilds, vmargs,
-              environmentVariables, toolLocations, accountId, credentialsId,
-              connectionMethod, computerConnector, shouldUsePrivateIp);
+                              ToolLocationNodeProperty toolLocations, String accountId,
+                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                              Boolean shouldUsePrivateIp) {
+        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              computerConnector, shouldUsePrivateIp);
     }
     //endregion
 
@@ -94,21 +96,21 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     public Map<String, String> getInstanceIpsById() {
         Map<String, String> retVal = new HashMap<>();
 
-        IAzureGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAzureGroupRepo();
-        ApiResponse<List<AzureGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+        IAzureGroupRepo awsGroupRepo = RepoManager.getInstance().getAzureGroupRepo();
+        ApiResponse<List<AzureGroupInstance>> instancesResponse =
+                awsGroupRepo.getGroupInstances(groupId, this.accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<AzureGroupInstance> instances = instancesResponse.getValue();
 
-            if (this.getShouldUsePrivateIp()) {
-                for (AzureGroupInstance instance: instances) {
+            for (AzureGroupInstance instance : instances) {
+                if (this.getShouldUsePrivateIp()) {
                     retVal.put(instance.getInstanceId(), instance.getPrivateIp());
                 }
-            }
-            else {
-                for (AzureGroupInstance instance: instances) {
+                else {
                     retVal.put(instance.getInstanceId(), instance.getPublicIp());
                 }
+
             }
         }
         else {
@@ -292,8 +294,8 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         }
         else {
             LOGGER.warn(String.format(
-                    "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s", vmSize,
-                    retVal, this.getGroupId()));
+                    "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s",
+                    vmSize, retVal, this.getGroupId()));
         }
 
         return retVal;

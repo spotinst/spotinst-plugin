@@ -4,7 +4,9 @@ package hudson.plugins.spotinst.common;
  * Created by Shibel Karmi Mansour on 30/12/2021.
  */
 public enum ConnectionMethodEnum {
-    //todo shibel - what 'Command on Master' means?
+    //todo x shibel - what 'Command on Master' means?
+    // The ComputerConnector provided by the plugin we rely on also supports launching an agent
+    // by running a command on the master. Most examples I've seen just run an ssh command.
     SSH_OR_COMMAND("SSH or Command on Master"),
     JNLP("JNLP");
 
@@ -18,17 +20,7 @@ public enum ConnectionMethodEnum {
         return name;
     }
 
-    //todo shibel - remove?
-    public static ConnectionMethodEnum fromName(String name) {
-        ConnectionMethodEnum retVal = null;
-        for (ConnectionMethodEnum usageEnum : ConnectionMethodEnum.values()) {
-            if (usageEnum.name.equals(name)) {
-                retVal = usageEnum;
-                break;
-            }
-        }
-
-        return retVal;
-    }
+    //todo x shibel - remove?
+    // shibel done.
 
 }

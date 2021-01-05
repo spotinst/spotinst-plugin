@@ -6,8 +6,6 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
-//todo shibel - remove
-import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewSpot;
@@ -17,8 +15,6 @@ import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.*;
 import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
-//todo shibel - remove
-import hudson.slaves.SlaveComputer;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -42,19 +38,20 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Constructor
-    //todo shibel - 'credentialsId' - change name to be more explicitly, credentials of what? (for all clouds)
+    //todo x shibel - 'credentialsId' - change name to be more explicitly, credentials of what? (for all clouds)
+    // done shibel. This field isn't needed in newer version of plugin we depend on. I don't know how it slipped.
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
                             String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
                             EnvironmentVariablesNodeProperty environmentVariables,
-                            ToolLocationNodeProperty toolLocations, String accountId, String credentialsId,
+                            ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                             Boolean shouldUsePrivateIp) {
 
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, credentialsId,
-              connectionMethod, computerConnector, shouldUsePrivateIp);
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              computerConnector, shouldUsePrivateIp);
 
         this.executorsForTypes = new LinkedList<>();
         executorsForInstanceType = new HashMap<>();
@@ -165,14 +162,13 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         if (instancesResponse.isRequestSucceed()) {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
 
-            //todo shibel - you can write one for loop and check inside which ip to put in map (for all clouds)
-            if (this.getShouldUsePrivateIp()) {
-                for (AwsGroupInstance instance: instances) {
+            //todo x shibel - you can write one for loop and check inside which ip to put in map (for all clouds)
+            // shibel done.
+            for (AwsGroupInstance instance : instances) {
+                if (this.getShouldUsePrivateIp()) {
                     retVal.put(instance.getInstanceId(), instance.getPrivateIp());
                 }
-            }
-            else {
-                for (AwsGroupInstance instance: instances) {
+                else {
                     retVal.put(instance.getInstanceId(), instance.getPublicIp());
                 }
             }
@@ -207,10 +203,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                 retVal = type.getExecutors();
                 LOGGER.info(String.format("Using the default value of %s", retVal));
             }
-        } else {
+        }
+        else {
             LOGGER.warn(String.format(
-                    "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s", instanceType,
-                    retVal, this.getGroupId()));
+                    "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s",
+                    instanceType, retVal, this.getGroupId()));
         }
 
         return retVal;
