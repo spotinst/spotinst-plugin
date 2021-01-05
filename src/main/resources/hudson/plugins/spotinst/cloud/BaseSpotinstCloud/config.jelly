@@ -35,7 +35,7 @@
               </f:entry>
           </f:radioBlock>
 
-          <f:radioBlock checked="${instance.connectionMethod == 'SSH_OR_COMMAND'}" name="connectionMethod" title="Connect with SSH" value="SSH_OR_COMMAND" inline="true">
+          <f:radioBlock checked="${instance.connectionMethod == 'SSH'}" name="connectionMethod" title="Connect with SSH" value="SSH" inline="true">
             <f:entry title="Use Private IP" field="shouldUsePrivateIp" id="usePrivateIP">
               <f:checkbox checked="${(instance != null) &amp;&amp; (instance.shouldUsePrivateIp)}"/>
             </f:entry>
