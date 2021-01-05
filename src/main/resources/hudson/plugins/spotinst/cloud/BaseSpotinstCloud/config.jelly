@@ -16,9 +16,10 @@
     <f:entry title="${%Idle minutes before termination}" field="idleTerminationMinutes">
         <f:textbox/>
     </f:entry>
-    <f:entry title="${%Remote root directory}" field="workspaceDir">
+    <f:entry title="${%Remote root directory}" field="workspaceDir" description="For SSH clouds, root directory must be specified and must exist in order for agents to connect.">
         <f:textbox/>
     </f:entry>
+    <f:block><span style="display: block; margin-bottom: 1em;"></span></f:block>
     <f:entry title="Usage" field="usage">
         <f:enum>${it.name()}</f:enum>
     </f:entry>
