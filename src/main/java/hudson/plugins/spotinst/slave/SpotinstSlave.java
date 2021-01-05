@@ -37,6 +37,7 @@ public class SpotinstSlave extends Slave {
     //endregion
 
     //region Constructor
+    //todo shibel - there are some unused params here
     public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, String tunnel, Boolean shouldUseWebsocket, String vmargs,
@@ -44,6 +45,7 @@ public class SpotinstSlave extends Slave {
                          Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
 
 
+        //todo sibel - shy using deprecated constructor?
         super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, null,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
@@ -220,6 +222,7 @@ public class SpotinstSlave extends Slave {
         return isTerminated;
     }
 
+    //todo shibel - the method name is remove bit you call here 'onInstanceReady' maybe iyt has the same logic but its not clear
     private void removeIfInPending() {
         if (this.getSpotinstCloud().isInstancePending(getInstanceId())) {
             // all that onInstanceReady does is remove from pending instances
@@ -240,10 +243,10 @@ public class SpotinstSlave extends Slave {
     //endregion
 
     //region Private Methods
+    //todo shibel - wht this logic is here? it should be in the Cloud that knoes if he is SSH or JNLP
     private ComputerLauncher buildLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
         ComputerLauncher retVal;
         Boolean isSshCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
-
 
         if (isSshCloud) {
             retVal = HandleSSHLauncher(instanceDetailsById);
@@ -251,10 +254,12 @@ public class SpotinstSlave extends Slave {
         else {
             retVal = handleJNLPLauncher();
         }
+
         return retVal;
     }
 
     private ComputerLauncher handleJNLPLauncher() {
+        //todo shibel - can be in one line
         ComputerLauncher launcher;
         launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
                                                 this.spotinstCloud.getShouldUseWebsocket(),

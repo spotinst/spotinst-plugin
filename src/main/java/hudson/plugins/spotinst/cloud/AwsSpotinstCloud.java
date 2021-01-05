@@ -6,6 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
+//todo shibel - remove
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewInstance;
@@ -16,6 +17,7 @@ import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.*;
 import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+//todo shibel - remove
 import hudson.slaves.SlaveComputer;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
@@ -40,6 +42,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Constructor
+    //todo shibel - 'credentialsId' - change name to be more explicitly, credentials of what? (for all clouds)
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
@@ -162,6 +165,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         if (instancesResponse.isRequestSucceed()) {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
 
+            //todo shibel - you can write one for loop and check inside which ip to put in map (for all clouds)
             if (this.getShouldUsePrivateIp()) {
                 for (AwsGroupInstance instance: instances) {
                     retVal.put(instance.getInstanceId(), instance.getPrivateIp());

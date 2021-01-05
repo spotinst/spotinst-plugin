@@ -98,6 +98,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
 
 
+        //todo shibel - are these params only for ssh? if so maybe add ssh to their names so it will be clear
         this.computerConnector = computerConnector;
         this.credentialsId = credentialsId;
     }
@@ -194,11 +195,15 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
                 }
             }
+            //todo shibel - no need to pass 'pendingInstances' its a member
+            //todo shibel - don't we need to call this method only if this cloud is configured as SSH ?
             checkIpsForSSHAgents(pendingInstances);
         }
     }
 
+    //todo shibel - change name of method - its not just checking
     private void checkIpsForSSHAgents(Map<String, PendingInstance> pendingInstances) {
+        //todo shibel  - no need fot this log, lets avoid printing it for each 'monitor' iteration
         LOGGER.info("Checking for offline SSH agents waiting to connect");
         List<SpotinstSlave> offlineAgents = getOfflineSSHAgents(pendingInstances);
 
@@ -218,6 +223,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     connectAgent(offlineAgent, ipForAgent);
                 }
                 else {
+                    //todo shibel - i would avoid printing 'null', you can say - ip for agent is not available yet or something like that
                     String preFormat = "IP for agent %s is still null, not attaching SSH launcher";
                     LOGGER.info(String.format(preFormat, agentName));
                 }
@@ -232,11 +238,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.toComputer();
 
         if (computerForAgent != null) {
+            //todo shibel - can be null?
             ComputerConnector connector        = getComputerConnector();
             ComputerLauncher  computerLauncher = computerForAgent.getLauncher();
 
             if (computerLauncher == null || computerLauncher.getClass() != SpotinstComputerLauncher.class) {
                 try {
+                    //todo shibel - is this code is sync / async? will it block the other agent in the for loop?
                     SpotSSHComputerLauncher launcher =
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
                                                         this.getShouldRetriggerBuilds());
@@ -255,6 +263,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
             }
         }
         else {
+            //todo shibel - when this will happen ?
             String preFormatted = "Agent %s does not have a computer";
             LOGGER.warn(String.format(preFormatted, offlineAgent.getNodeName()));
         }
@@ -271,6 +280,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 String          instanceId      = pendingInstance.getId();
                 SpotinstSlave   agent           = (SpotinstSlave) Jenkins.get().getNode(instanceId);
 
+                //todo shibel we prefer to avoid 'continue', its more readable to check agent != null with else and in the else just print this log
                 if (agent == null) {
                     LOGGER.warn(String.format("Pending instance %s does not have a SpotinstSlave", instanceId));
                     continue;
@@ -278,6 +288,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
                 SpotinstComputer computerForAgent = (SpotinstComputer) agent.getComputer();
 
+                //todo shibel  - as above comment
                 if (computerForAgent == null) {
                     LOGGER.warn(String.format("Agent %s does not have a computer", instanceId));
                     continue;
@@ -287,6 +298,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     LOGGER.info(String.format("Agent %s is already online, no need to handle", instanceId));
                 }
                 else {
+                    //todo shibel - what is the meaning of this check? if the ssh launcher is not set yet, won't it be null?
                     if (computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
                         retVal.add(agent);
                     }
@@ -558,6 +570,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.credentialsId = credentialsId;
     }
 
+    //todo shibel - why not using small boolean ?
     public Boolean getShouldUsePrivateIp() {
         // default for clouds that were configured before introducing this field
         if (shouldUsePrivateIp == null) {
@@ -584,6 +597,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Abstract Class
+    //todo shibel - why we need this?
     @SuppressWarnings("unused")
     public static abstract class DescriptorImpl extends Descriptor<Cloud> {
         public DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> getToolDescriptors() {

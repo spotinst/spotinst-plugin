@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SpotSSHComputerLauncher extends DelegatingComputerLauncher {
     //region Members
+    //todo shibel - remove
     private static final Logger LOGGER = LoggerFactory.getLogger(SpotSSHComputerLauncher.class);
     private Boolean shouldRetriggerBuilds;
     //endregion
