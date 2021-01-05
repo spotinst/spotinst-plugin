@@ -6,8 +6,9 @@ package hudson.plugins.spotinst.common;
 public enum ConnectionMethodEnum {
     //todo x shibel - what 'Command on Master' means?
     // The ComputerConnector provided by the plugin we rely on also supports launching an agent
-    // by running a command on the master. Most examples I've seen just run an ssh command.
-    SSH_OR_COMMAND("SSH or Command on Master"),
+    // by running a command on the master. Most examples I've seen just run an ssh command. But this made me think:
+    // it doesn't make sense to support this, so I've added code to filter CommandConnector out (see very bottom of BaseSpotinstCloud).
+    SSH("SSH or Command on Master"),
     JNLP("JNLP");
 
     private String name;

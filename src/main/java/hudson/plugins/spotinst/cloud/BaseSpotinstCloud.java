@@ -8,6 +8,7 @@ import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.TimeUtils;
 import hudson.plugins.spotinst.slave.*;
+import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import hudson.tools.ToolDescriptor;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by ohadmuchnik on 25/05/2016.
@@ -338,8 +340,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SlaveComputer computer = slave.getComputer();
 
         if (computer != null) {
-            Boolean isSlaveConnecting = computer.isConnecting();
-            Boolean isSlaveOffline    = computer.isOffline();
+            Boolean isSlaveConnecting  = computer.isConnecting();
+            Boolean isSlaveOffline     = computer.isOffline();
             Boolean temporarilyOffline = computer.isTemporarilyOffline();
 
             Integer offlineThreshold       = getSlaveOfflineThreshold();
@@ -635,8 +637,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
             return installation.getDescriptor().getClass().getName() + "@" + installation.getName();
         }
 
+        // TODO shibel: approve with Ohad (see note) - should we filter like this? re: note on what is command on master?
         public List getComputerConnectorDescriptors() {
-            return Jenkins.get().getDescriptorList(ComputerConnector.class);
+            return Jenkins.get().getDescriptorList(ComputerConnector.class).stream()
+                          .filter(x -> x.isSubTypeOf(SSHConnector.class)).collect(Collectors.toList());
         }
     }
     //endregion

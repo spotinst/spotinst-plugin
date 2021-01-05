@@ -1,6 +1,5 @@
 package hudson.plugins.spotinst;
 
-import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.cloud.*;
@@ -25,7 +24,6 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -149,9 +147,9 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
+                                     ConnectionMethodEnum.SSH, getSSHConnector(), false);
 
-        assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH_OR_COMMAND);
+        assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH);
 
         AwsInstanceTypeEnum   vmSizeBasicA2 = AwsInstanceTypeEnum.C4Large;
         AwsScaleResultNewSpot newSpot       = new AwsScaleResultNewSpot();
@@ -194,9 +192,9 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
+                                     ConnectionMethodEnum.SSH, getSSHConnector(), false);
 
-        assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH_OR_COMMAND);
+        assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH);
 
         AwsInstanceTypeEnum   vmSizeBasicA2 = AwsInstanceTypeEnum.C4Large;
         AwsScaleResultNewSpot newSpot       = new AwsScaleResultNewSpot();
@@ -547,7 +545,7 @@ public class SpotinstCloudTest {
         String groupId = "sig-1";
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
-                                     ConnectionMethodEnum.SSH_OR_COMMAND, getSSHConnector(), false);
+                                     ConnectionMethodEnum.SSH, getSSHConnector(), false);
 
 
         AwsInstanceTypeEnum   vmSizeBasicA2 = AwsInstanceTypeEnum.C4Large;

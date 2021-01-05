@@ -253,7 +253,7 @@ public class SpotinstSlave extends Slave {
     // shibel question: are you talking about this method only, or the method it calls as well?
     private ComputerLauncher buildLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
         ComputerLauncher retVal;
-        Boolean isSshCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH_OR_COMMAND);
+        Boolean isSshCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
 
         if (isSshCloud) {
             retVal = HandleSSHLauncher(instanceDetailsById);
