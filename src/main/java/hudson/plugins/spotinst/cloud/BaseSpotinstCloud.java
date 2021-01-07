@@ -100,10 +100,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.shouldUsePrivateIp = false;
         }
 
-
-        //todo x shibel - are these params only for ssh? if so maybe add ssh to their names so it will be clear
-        // shibel answer: I can do that, but then shouldUseWebsocket and tunnel are only for JNLP, so should we do
-        // the same?
         this.computerConnector = computerConnector;
     }
     //endregion
@@ -245,7 +241,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
                                                         this.getShouldRetriggerBuilds());
                     offlineAgent.setLauncher(launcher);
-                    // save this information to disk - survive Jenkins restarts
+                    // save this information to disk - so Launcher survives Jenkins restarts
                     offlineAgent.save();
                     // tell computer its node has been updated
                     computerForAgent.resyncNode();
