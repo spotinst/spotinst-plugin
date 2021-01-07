@@ -37,27 +37,16 @@ public class SpotinstSlave extends Slave {
     //endregion
 
     //region Constructor
-    //todo x? shibel - there are some unused params here
-    // shibel answer: yes, I can pass them to buildLauncher but they are really properties of this
-    // instance's cloud. Honestly I'm not experienced enough to know what's the right approach here.
     public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
-                         String numOfExecutors, Mode mode, String tunnel, Boolean shouldUseWebsocket, String vmargs,
-                         List<NodeProperty<?>> nodeProperties,
-                         Boolean shouldRetriggerBuilds) throws Descriptor.FormException, IOException {
+                         String numOfExecutors, Mode mode, ComputerLauncher launcher,
+                         List<NodeProperty<?>> nodeProperties) throws Descriptor.FormException, IOException {
 
 
-        //todo x? shibel - shy using deprecated constructor?
-        // done shibel answer: this has been there for a while and I was told (in previous works) not to touch anything
-        // major that already exists. I can refactor. We also use Jenkins.getInstance() for example, which is also deprecated.
-        super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, null,
+        super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, launcher,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
         this.spotinstCloud = spotinstCloud;
-        SlaveInstanceDetails instanceDetailsById = spotinstCloud.getSlaveDetails(this.name);
-        ComputerLauncher     launcher            = buildLauncher(instanceDetailsById);
-
-        this.setLauncher(launcher);
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
         this.instanceId = instanceId;
@@ -226,15 +215,14 @@ public class SpotinstSlave extends Slave {
         return isTerminated;
     }
 
-    //todo x shibel - the method name is remove bit you call here 'onInstanceReady' maybe iyt has the same logic but its not clear
-    // done shibel.
     private void removeIfInPending() {
-        String instanceId = getInstanceId();
+        String            instanceId        = getInstanceId();
+        BaseSpotinstCloud cloud             = this.getSpotinstCloud();
+        Boolean           isInstancePending = cloud.isInstancePending(instanceId);
 
-        if (this.getSpotinstCloud().isInstancePending(instanceId)) {
-            this.getSpotinstCloud().removeInstanceFromPending(instanceId);
-            LOGGER.info(
-                    String.format("Instance: %s removed from pending instances after termination", instanceId));
+        if (isInstancePending) {
+            cloud.removeInstanceFromPending(instanceId);
+            LOGGER.info(String.format("Instance: %s removed from pending instances after termination", instanceId));
         }
     }
 
@@ -247,75 +235,6 @@ public class SpotinstSlave extends Slave {
         this.spotinstCloud.onInstanceReady(getNodeName());
     }
     //endregion
-
-    //region Private Methods
-    //todo x? shibel - wht this logic is here? it should be in the Cloud that knoes if he is SSH or JNLP
-    // shibel question: are you talking about this method only, or the method it calls as well?
-    private ComputerLauncher buildLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
-        ComputerLauncher retVal;
-        Boolean isSshCloud = spotinstCloud.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
-
-        if (isSshCloud) {
-            retVal = HandleSSHLauncher(instanceDetailsById);
-        }
-        else {
-            retVal = handleJNLPLauncher();
-        }
-
-        return retVal;
-    }
-
-    private ComputerLauncher handleJNLPLauncher() {
-        //todo x shibel - can be in one line
-        // shibel done.
-        ComputerLauncher launcher = new SpotinstComputerLauncher(this.spotinstCloud.getTunnel(), this.spotinstCloud.getVmargs(),
-                                                this.spotinstCloud.getShouldUseWebsocket(),
-                                                this.spotinstCloud.getShouldRetriggerBuilds());
-        return launcher;
-    }
-
-    private ComputerLauncher HandleSSHLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
-        ComputerLauncher  retVal     = null;
-        BaseSpotinstCloud cloud      = this.getSpotinstCloud();
-        String            instanceId = this.name;
-        String            ipAddress;
-
-        if (instanceDetailsById == null) {
-            LOGGER.info(String.format(
-                    "no details about instance %s in instanceDetailsById map, not initializing launcher yet.",
-                    this.name));
-            return null;
-        }
-
-        if (cloud.getShouldUsePrivateIp()) {
-            ipAddress = instanceDetailsById.getPrivateIp();
-        }
-        else {
-            ipAddress = instanceDetailsById.getPublicIp();
-        }
-
-        if (ipAddress != null) {
-            try {
-                Boolean shouldRetriggerBuilds = cloud.getShouldRetriggerBuilds();
-                retVal = new SpotSSHComputerLauncher(
-                        cloud.getComputerConnector().launch(instanceDetailsById.getPublicIp(), TaskListener.NULL),
-                        shouldRetriggerBuilds);
-                this.getSpotinstCloud().connectAgent(this, ipAddress);
-
-            }
-            catch (InterruptedException e) {
-                String preformatted = "Creating SSHComputerLauncher for SpotinstSlave (instance %s) was interrupted";
-                LOGGER.error(String.format(preformatted, instanceId));
-            }
-        }
-        else {
-            String preformatted = "SSH-cloud instance %s does not have an IP yet, setting launcher to null for now.";
-            LOGGER.info(String.format(preformatted, instanceId));
-        }
-        return retVal;
-    }
-    //endregion
-
 
     //region Extension class
     @Extension

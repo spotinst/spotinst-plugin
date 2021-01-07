@@ -116,9 +116,6 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
 
             LOGGER.info(String.format("There are %s instances in group %s", vms.size(), groupId));
 
-            addNewSlaveInstances(vms);
-            removeOldSlaveInstances(vms);
-
             Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
 
             for (AzureGroupVm vm : vms) {
@@ -127,6 +124,9 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
             }
 
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+            removeOldSlaveInstances(vms);
+            addNewSlaveInstances(vms);
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,

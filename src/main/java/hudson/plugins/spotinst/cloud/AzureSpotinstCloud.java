@@ -132,8 +132,6 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
 
             LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
 
-            addNewSlaveInstances(instances);
-            removeOldSlaveInstances(instances);
 
             Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
 
@@ -143,6 +141,9 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
             }
 
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+            removeOldSlaveInstances(instances);
+            addNewSlaveInstances(instances);
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,

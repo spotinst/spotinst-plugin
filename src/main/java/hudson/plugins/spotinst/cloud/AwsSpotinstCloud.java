@@ -38,8 +38,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Constructor
-    //todo x shibel - 'credentialsId' - change name to be more explicitly, credentials of what? (for all clouds)
-    // done shibel. This field isn't needed in newer version of plugin we depend on. I don't know how it slipped.
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
@@ -134,9 +132,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
             LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
 
-            addNewSlaveInstances(instances);
-            removeOldSlaveInstances(instances);
-
             Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
 
             for (AwsGroupInstance instance : instances) {
@@ -145,6 +140,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             }
 
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+            addNewSlaveInstances(instances);
+            removeOldSlaveInstances(instances);
+
+
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
@@ -162,8 +162,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         if (instancesResponse.isRequestSucceed()) {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
 
-            //todo x shibel - you can write one for loop and check inside which ip to put in map (for all clouds)
-            // shibel done.
             for (AwsGroupInstance instance : instances) {
                 if (this.getShouldUsePrivateIp()) {
                     retVal.put(instance.getInstanceId(), instance.getPrivateIp());

@@ -125,9 +125,6 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
 
             LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
 
-            addNewGcpSlaveInstances(instances);
-            removeOldGcpSlaveInstances(instances);
-
             Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
 
             for (GcpGroupInstance instance : instances) {
@@ -136,6 +133,9 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
             }
 
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+            removeOldGcpSlaveInstances(instances);
+            addNewGcpSlaveInstances(instances);
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,

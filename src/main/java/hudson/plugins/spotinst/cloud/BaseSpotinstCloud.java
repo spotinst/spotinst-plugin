@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -202,22 +203,11 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
                 }
             }
-            //todo x shibel - no need to pass 'pendingInstances' its a member
-            // shibel done.
-            //todo x shibel - don't we need to call this method only if this cloud is configured as SSH ?
-            // shibel answer: there's one edge-case I can think about: cloud was just updated to be JNLP instead
-            // of SSH, and one SSH instance hasn't connected yet. We can still connect this one with this method, and next ones will
-            // be JNLP. getOfflineSshAgents verifies we don't try to connect JNLP ones.
-            // I don't know if I'm being a "wise-guy" here.
             connectOfflineSshAgents();
         }
     }
 
-    //todo x shibel - change name of method - its not just checking
-    // done shibel
     private void connectOfflineSshAgents() {
-        //todo x shibel  - no need fot this log, lets avoid printing it for each 'monitor' iteration
-        // shibel done
         List<SpotinstSlave> offlineAgents = getOfflineSshAgents(pendingInstances);
 
         if (offlineAgents.size() > 0) {
@@ -235,15 +225,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     connectAgent(offlineAgent, ipForAgent);
                 }
                 else {
-                    //todo x shibel - i would avoid printing 'null', you can say - ip for agent is not available yet or something like that
-                    // shibel done
                     String preFormat = "IP for agent %s is not available yet, not attaching SSH launcher";
                     LOGGER.info(String.format(preFormat, agentName));
                 }
             }
-        }
-        else {
-            LOGGER.info("There are no newly-created SSH agents that are waiting to connect");
         }
     }
 
@@ -251,16 +236,11 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SpotinstComputer computerForAgent = (SpotinstComputer) offlineAgent.toComputer();
 
         if (computerForAgent != null) {
-            //todo x shibel - can be null?
-            // done shibel answer: see answer below in else clause.
             ComputerConnector connector        = getComputerConnector();
             ComputerLauncher  computerLauncher = computerForAgent.getLauncher();
 
             if (computerLauncher == null || computerLauncher.getClass() != SpotinstComputerLauncher.class) {
                 try {
-                    //todo x shibel - is this code is sync / async? will it block the other agent in the for loop?
-                    // done shibel answer: connect(boolean) is async. This code will not block, and
-                    // with connect(false) we're telling Jenkins to not force a reconnect (should we?).
                     SpotSSHComputerLauncher launcher =
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
                                                         this.getShouldRetriggerBuilds());
@@ -279,10 +259,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
             }
         }
         else {
-            //todo x shibel - when this will happen ?
-            // done shibel answer: when for some reason, an agent does not have a computer attached. There are edge
-            // cases in the Jenkins lifecycle where this could be possible and I think it's better to check for
-            // that. I have seen it happen several times in my tests.
             String preFormatted = "Agent %s does not have a computer";
             LOGGER.warn(String.format(preFormatted, offlineAgent.getNodeName()));
         }
@@ -299,8 +275,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 String          instanceId      = pendingInstance.getId();
                 SpotinstSlave   agent           = (SpotinstSlave) Jenkins.get().getNode(instanceId);
 
-                //todo x shibel we prefer to avoid 'continue', its more readable to check agent != null with else and in the else just print this log
-                // shibel done (but my God the indentation)
                 if (agent != null) {
                     SpotinstComputer computerForAgent = (SpotinstComputer) agent.getComputer();
 
@@ -309,12 +283,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
                             LOGGER.info(String.format("Agent %s is already online, no need to handle", instanceId));
                         }
                         else {
-                            // todo x shibel - what is the meaning of this check? if the ssh launcher is not set yet, won't it be null?
-                            //  actually, it would be JNLPLauncher (!=SpotinstComputerLauncher) because that's the default launcher Jenkins
-                            //  assigns to a computer that has no launcher. See {@link SlaveComputer#grabLauncher(Node)} which is called
-                            //  by the Computer's constructor. I'm aware I'm checking if the launcher is null elsewhere
-                            //  (in connectAgent), I think this check does not hurt and we can't be too defensive with
-                            //  Jenkins. In fact, I have added it here as well.
                             if (computerForAgent.getLauncher() == null ||
                                 computerForAgent.getLauncher().getClass() != SpotinstComputerLauncher.class) {
                                 retVal.add(agent);
@@ -335,22 +303,29 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    // TODO shibel: approve this with Ohad. AT LEAST check for not is temporarilyOffline.
     protected void terminateOfflineSlaves(SpotinstSlave slave, String slaveInstanceId) {
         SlaveComputer computer = slave.getComputer();
-
         if (computer != null) {
-            Boolean isSlaveConnecting  = computer.isConnecting();
-            Boolean isSlaveOffline     = computer.isOffline();
+            Integer offlineThreshold  = getSlaveOfflineThreshold();
+            Boolean isSlaveConnecting = computer.isConnecting();
+            Boolean isSlaveOffline    = computer.isOffline();
+            // the computer is actively marked as temporary offline
             Boolean temporarilyOffline = computer.isTemporarilyOffline();
+            long    idleStartMillis    = computer.getIdleStartMilliseconds();
 
-            Integer offlineThreshold       = getSlaveOfflineThreshold();
+            long idleInMillis  = System.currentTimeMillis() - idleStartMillis;
+            long idleInMinutes = TimeUnit.MILLISECONDS.toMinutes(idleInMillis);
+            // the computer has been idle for more than threshold - rule out temporary disconnection
+            Boolean isOverIdleThreshold = idleInMinutes > offlineThreshold;
+
+
             Date    slaveCreatedAt         = slave.getCreatedAt();
             Boolean isOverOfflineThreshold = TimeUtils.isTimePassed(slaveCreatedAt, offlineThreshold);
 
-            if (isSlaveOffline && isSlaveConnecting == false && isOverOfflineThreshold && temporarilyOffline == false) {
+            if (isSlaveOffline && isSlaveConnecting == false && isOverOfflineThreshold && temporarilyOffline == false &&
+                isOverIdleThreshold) {
                 LOGGER.info(String.format(
-                        "Slave for instance: %s running in group: %s is offline and created more than %d minutes ago (slave creation time: %s), terminating",
+                        "Agent for instance: %s running in group: %s is offline and created more than %d minutes ago (agent creation time: %s), terminating",
                         slaveInstanceId, groupId, offlineThreshold, slaveCreatedAt));
 
                 slave.terminate();
@@ -431,9 +406,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         List<NodeProperty<?>> nodeProperties = buildNodeProperties();
 
         try {
+            ComputerLauncher launcher = buildLauncherForAgent(id);
             slave = new SpotinstSlave(this, id, groupId, id, instanceType, labelString, idleTerminationMinutes,
-                                      workspaceDir, numOfExecutors, mode, this.tunnel, this.shouldUseWebsocket,
-                                      this.vmargs, nodeProperties, this.shouldRetriggerBuilds);
+                                      workspaceDir, numOfExecutors, mode, launcher, nodeProperties);
+
         }
         catch (Descriptor.FormException | IOException e) {
             LOGGER.error(String.format("Failed to build Spotinst slave for: %s", id));
@@ -442,6 +418,65 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         return slave;
     }
+
+    private ComputerLauncher buildLauncherForAgent(String instanceId) throws IOException {
+        ComputerLauncher     retVal;
+        Boolean              isSshCloud          = this.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
+        SlaveInstanceDetails instanceDetailsById = getSlaveDetails(instanceId);
+
+        if (isSshCloud) {
+            retVal = HandleSSHLauncher(instanceDetailsById);
+        }
+        else {
+            retVal = handleJNLPLauncher();
+        }
+
+        return retVal;
+    }
+
+    private ComputerLauncher handleJNLPLauncher() {
+        return new SpotinstComputerLauncher(this.getTunnel(), this.getVmargs(), this.getShouldUseWebsocket(),
+                                            this.getShouldRetriggerBuilds());
+    }
+
+    private ComputerLauncher HandleSSHLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
+        ComputerLauncher retVal     = null;
+        String           instanceId = this.name;
+        String           ipAddress;
+
+        if (instanceDetailsById == null) {
+            LOGGER.info(String.format(
+                    "no details about instance %s in instanceDetailsById map, not initializing launcher yet.",
+                    this.name));
+            return null;
+        }
+
+        if (this.getShouldUsePrivateIp()) {
+            ipAddress = instanceDetailsById.getPrivateIp();
+        }
+        else {
+            ipAddress = instanceDetailsById.getPublicIp();
+        }
+
+        if (ipAddress != null) {
+            try {
+                Boolean shouldRetriggerBuilds = this.getShouldRetriggerBuilds();
+                retVal = new SpotSSHComputerLauncher(
+                        this.getComputerConnector().launch(instanceDetailsById.getPublicIp(), TaskListener.NULL),
+                        shouldRetriggerBuilds);
+            }
+            catch (InterruptedException e) {
+                String preformatted = "Creating SSHComputerLauncher for SpotinstSlave (instance %s) was interrupted";
+                LOGGER.error(String.format(preformatted, instanceId));
+            }
+        }
+        else {
+            String preformatted = "SSH-cloud instance %s does not have an IP yet, setting launcher to null for now.";
+            LOGGER.info(String.format(preformatted, instanceId));
+        }
+        return retVal;
+    }
+
 
     protected List<SpotinstSlave> getAllSpotinstSlaves() {
         LOGGER.info(String.format("Getting all existing slaves for group: %s", groupId));
@@ -597,8 +632,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.credentialsId = credentialsId;
     }
 
-    //todo x shibel - why not using small boolean ?
-    // done shibel. I was told we always use Boolean and not boolean (and Integer and not integer) at Spot.
     public boolean getShouldUsePrivateIp() {
         // default for clouds that were configured before introducing this field
         if (shouldUsePrivateIp == null) {
@@ -625,8 +658,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Abstract Class
-    //todo x shibel - why we need this?
-    // shibel answer: Descriptors are only used by Jelly, and are recognized as unused. I can remove it.
     @SuppressWarnings("unused")
     public static abstract class DescriptorImpl extends Descriptor<Cloud> {
         public DescriptorExtensionList<ToolInstallation, ToolDescriptor<?>> getToolDescriptors() {
@@ -637,7 +668,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
             return installation.getDescriptor().getClass().getName() + "@" + installation.getName();
         }
 
-        // TODO shibel: approve with Ohad (see note) - should we filter like this? re: note on what is command on master?
         public List getComputerConnectorDescriptors() {
             return Jenkins.get().getDescriptorList(ComputerConnector.class).stream()
                           .filter(x -> x.isSubTypeOf(SSHConnector.class)).collect(Collectors.toList());
