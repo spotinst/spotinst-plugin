@@ -244,8 +244,9 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     SpotSSHComputerLauncher launcher =
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
                                                         this.getShouldRetriggerBuilds());
-
                     offlineAgent.setLauncher(launcher);
+                    // save this information to disk to survive Jenkins restarts
+                    offlineAgent.save();
                     // tell computer its node has been updated
                     computerForAgent.resyncNode();
                     computerForAgent.connect(false);
