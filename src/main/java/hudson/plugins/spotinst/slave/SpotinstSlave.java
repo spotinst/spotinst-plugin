@@ -3,7 +3,6 @@ package hudson.plugins.spotinst.slave;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
-import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
