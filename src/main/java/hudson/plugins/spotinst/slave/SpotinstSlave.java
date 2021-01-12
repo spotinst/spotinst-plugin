@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.*;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
 import hudson.slaves.ComputerLauncher;
+import hudson.slaves.EphemeralNode;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
@@ -20,7 +21,7 @@ import java.util.Objects;
 /**
  * Created by ohadmuchnik on 23/05/2016.
  */
-public class SpotinstSlave extends Slave {
+public class SpotinstSlave extends Slave implements EphemeralNode {
 
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(SpotinstSlave.class);
@@ -164,13 +165,18 @@ public class SpotinstSlave extends Slave {
         return Objects.equals(instanceId, that.instanceId) && Objects.equals(instanceType, that.instanceType) &&
                Objects.equals(elastigroupId, that.elastigroupId) && Objects.equals(workspaceDir, that.workspaceDir) &&
                Objects.equals(groupUrl, that.groupUrl) && usage == that.usage &&
-               Objects.equals(createdAt, that.createdAt) && Objects.equals(spotinstCloud, that.spotinstCloud);
+               Objects.equals(createdAt, that.createdAt);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), instanceId, instanceType, elastigroupId, workspaceDir, groupUrl, usage,
-                            createdAt, spotinstCloud);
+                            createdAt);
+    }
+
+    @Override
+    public Node asNode() {
+        return this;
     }
     //endregion
 
