@@ -90,7 +90,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     }
 
     public BaseSpotinstCloud getSpotinstCloud() {
-       return (BaseSpotinstCloud) Jenkins.get().getCloud(this.elastigroupId);
+       return spotinstCloud;
     }
 
     public String getPrivateIp() {
