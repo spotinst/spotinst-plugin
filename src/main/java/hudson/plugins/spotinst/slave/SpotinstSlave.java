@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by ohadmuchnik on 23/05/2016.
@@ -91,7 +90,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     }
 
     public BaseSpotinstCloud getSpotinstCloud() {
-        return spotinstCloud;
+       return (BaseSpotinstCloud) Jenkins.get().getCloud(this.elastigroupId);
     }
 
     public String getPrivateIp() {
@@ -148,30 +147,6 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
         }
 
         return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        SpotinstSlave that = (SpotinstSlave) o;
-        return Objects.equals(instanceId, that.instanceId) && Objects.equals(instanceType, that.instanceType) &&
-               Objects.equals(elastigroupId, that.elastigroupId) && Objects.equals(workspaceDir, that.workspaceDir) &&
-               Objects.equals(groupUrl, that.groupUrl) && usage == that.usage &&
-               Objects.equals(createdAt, that.createdAt);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), instanceId, instanceType, elastigroupId, workspaceDir, groupUrl, usage,
-                            createdAt);
     }
 
     @Override
