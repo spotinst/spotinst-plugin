@@ -404,7 +404,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         try {
             ComputerLauncher launcher = buildLauncherForAgent(id);
-            slave = new SpotinstSlave(this, id, groupId, id, instanceType, labelString, idleTerminationMinutes,
+            slave = new SpotinstSlave(id, groupId, id, instanceType, labelString, idleTerminationMinutes,
                                       workspaceDir, numOfExecutors, mode, launcher, nodeProperties);
 
         }

@@ -32,11 +32,10 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     private String            groupUrl;
     private SlaveUsageEnum    usage;
     private Date              createdAt;
-    private BaseSpotinstCloud spotinstCloud;
     //endregion
 
     //region Constructor
-    public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
+    public SpotinstSlave(String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, ComputerLauncher launcher,
                          List<NodeProperty<?>> nodeProperties) throws Descriptor.FormException, IOException {
@@ -45,14 +44,13 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
         super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, launcher,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
-        this.spotinstCloud = spotinstCloud;
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
         this.instanceId = instanceId;
         this.workspaceDir = workspaceDir;
         this.usage = SlaveUsageEnum.fromMode(mode);
         this.createdAt = new Date();
-        groupUrl = spotinstCloud.getCloudUrl();
+        groupUrl = getSpotinstCloud().getCloudUrl();
     }
     //endregion
 
@@ -90,13 +88,13 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     }
 
     public BaseSpotinstCloud getSpotinstCloud() {
-       return spotinstCloud;
+        return (BaseSpotinstCloud) Jenkins.get().getCloud(this.elastigroupId);
     }
 
     public String getPrivateIp() {
         String               retVal          = null;
         String               instanceId      = getInstanceId();
-        SlaveInstanceDetails instanceDetails = spotinstCloud.getSlaveDetails(instanceId);
+        SlaveInstanceDetails instanceDetails = getSpotinstCloud().getSlaveDetails(instanceId);
 
         if (instanceDetails != null) {
             retVal = instanceDetails.getPrivateIp();
@@ -108,7 +106,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     public String getPublicIp() {
         String               retVal          = null;
         String               instanceId      = getInstanceId();
-        SlaveInstanceDetails instanceDetails = spotinstCloud.getSlaveDetails(instanceId);
+        SlaveInstanceDetails instanceDetails = getSpotinstCloud().getSlaveDetails(instanceId);
 
         if (instanceDetails != null) {
             retVal = instanceDetails.getPublicIp();
@@ -157,7 +155,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
     //region Public Methods
     public void terminate() {
-        Boolean isTerminated = spotinstCloud.detachInstance(instanceId);
+        Boolean isTerminated = getSpotinstCloud().detachInstance(instanceId);
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
@@ -175,7 +173,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     }
 
     public Boolean forceTerminate() {
-        Boolean isTerminated = spotinstCloud.detachInstance(instanceId);
+        Boolean isTerminated = getSpotinstCloud().detachInstance(instanceId);
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
@@ -206,12 +204,12 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     }
 
     public boolean isSlavePending() {
-        boolean retVal = this.spotinstCloud.isInstancePending(getNodeName());
+        boolean retVal = getSpotinstCloud().isInstancePending(getNodeName());
         return retVal;
     }
 
     public void onSlaveConnected() {
-        this.spotinstCloud.onInstanceReady(getNodeName());
+        getSpotinstCloud().onInstanceReady(getNodeName());
     }
     //endregion
 
