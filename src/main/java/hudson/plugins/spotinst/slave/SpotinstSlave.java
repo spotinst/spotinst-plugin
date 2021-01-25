@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by ohadmuchnik on 23/05/2016.
@@ -32,11 +31,10 @@ public class SpotinstSlave extends Slave {
     private String            groupUrl;
     private SlaveUsageEnum    usage;
     private Date              createdAt;
-    private BaseSpotinstCloud spotinstCloud;
     //endregion
 
     //region Constructor
-    public SpotinstSlave(BaseSpotinstCloud spotinstCloud, String name, String elastigroupId, String instanceId,
+    public SpotinstSlave(String name, String elastigroupId, String instanceId,
                          String instanceType, String label, String idleTerminationMinutes, String workspaceDir,
                          String numOfExecutors, Mode mode, ComputerLauncher launcher,
                          List<NodeProperty<?>> nodeProperties) throws Descriptor.FormException, IOException {
@@ -45,14 +43,13 @@ public class SpotinstSlave extends Slave {
         super(name, "Elastigroup Id: " + elastigroupId, workspaceDir, numOfExecutors, mode, label, launcher,
               new SpotinstRetentionStrategy(idleTerminationMinutes), nodeProperties);
 
-        this.spotinstCloud = spotinstCloud;
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
         this.instanceId = instanceId;
         this.workspaceDir = workspaceDir;
         this.usage = SlaveUsageEnum.fromMode(mode);
         this.createdAt = new Date();
-        groupUrl = spotinstCloud.getCloudUrl();
+        groupUrl = getSpotinstCloud().getCloudUrl();
     }
     //endregion
 
@@ -90,13 +87,13 @@ public class SpotinstSlave extends Slave {
     }
 
     public BaseSpotinstCloud getSpotinstCloud() {
-        return spotinstCloud;
+        return (BaseSpotinstCloud) Jenkins.get().getCloud(this.elastigroupId);
     }
 
     public String getPrivateIp() {
         String               retVal          = null;
         String               instanceId      = getInstanceId();
-        SlaveInstanceDetails instanceDetails = spotinstCloud.getSlaveDetails(instanceId);
+        SlaveInstanceDetails instanceDetails = getSpotinstCloud().getSlaveDetails(instanceId);
 
         if (instanceDetails != null) {
             retVal = instanceDetails.getPrivateIp();
@@ -108,7 +105,7 @@ public class SpotinstSlave extends Slave {
     public String getPublicIp() {
         String               retVal          = null;
         String               instanceId      = getInstanceId();
-        SlaveInstanceDetails instanceDetails = spotinstCloud.getSlaveDetails(instanceId);
+        SlaveInstanceDetails instanceDetails = getSpotinstCloud().getSlaveDetails(instanceId);
 
         if (instanceDetails != null) {
             retVal = instanceDetails.getPublicIp();
@@ -148,35 +145,11 @@ public class SpotinstSlave extends Slave {
 
         return this;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        SpotinstSlave that = (SpotinstSlave) o;
-        return Objects.equals(instanceId, that.instanceId) && Objects.equals(instanceType, that.instanceType) &&
-               Objects.equals(elastigroupId, that.elastigroupId) && Objects.equals(workspaceDir, that.workspaceDir) &&
-               Objects.equals(groupUrl, that.groupUrl) && usage == that.usage &&
-               Objects.equals(createdAt, that.createdAt) && Objects.equals(spotinstCloud, that.spotinstCloud);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), instanceId, instanceType, elastigroupId, workspaceDir, groupUrl, usage,
-                            createdAt, spotinstCloud);
-    }
     //endregion
 
     //region Public Methods
     public void terminate() {
-        Boolean isTerminated = spotinstCloud.detachInstance(instanceId);
+        Boolean isTerminated = getSpotinstCloud().detachInstance(instanceId);
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
@@ -194,7 +167,7 @@ public class SpotinstSlave extends Slave {
     }
 
     public Boolean forceTerminate() {
-        Boolean isTerminated = spotinstCloud.detachInstance(instanceId);
+        Boolean isTerminated = getSpotinstCloud().detachInstance(instanceId);
 
         if (isTerminated) {
             LOGGER.info(String.format("Instance: %s terminated successfully", getInstanceId()));
@@ -225,12 +198,12 @@ public class SpotinstSlave extends Slave {
     }
 
     public boolean isSlavePending() {
-        boolean retVal = this.spotinstCloud.isInstancePending(getNodeName());
+        boolean retVal = getSpotinstCloud().isInstancePending(getNodeName());
         return retVal;
     }
 
     public void onSlaveConnected() {
-        this.spotinstCloud.onInstanceReady(getNodeName());
+        getSpotinstCloud().onInstanceReady(getNodeName());
     }
     //endregion
 
