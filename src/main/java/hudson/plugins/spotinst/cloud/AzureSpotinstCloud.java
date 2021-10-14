@@ -19,6 +19,7 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,11 +202,11 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
-    @Override
+    @DataBoundSetter
     public void setCredentialsId(String credentialsId) {
         this.credentialsId = credentialsId;
     }
-    @Override
+    @DataBoundSetter
     public void setCredentialsMethod(CredentialsMethodEnum credentialsMethod) {
         this.credentialsMethod = credentialsMethod;
     }

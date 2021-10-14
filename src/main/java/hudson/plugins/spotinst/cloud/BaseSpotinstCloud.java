@@ -640,23 +640,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return Constants.SLAVE_OFFLINE_THRESHOLD_IN_MINUTES;
     }
 
-    @DataBoundSetter
     protected void setCredentialsId(String credentialsId) {
         this.credentialsId = credentialsId;
-    }
-
-    @DataBoundSetter
-    protected void setCredentialsMethod(CredentialsMethodEnum credentialsMethod) {
-        this.credentialsMethod = credentialsMethod;
-        if(this.credentialsMethod == CredentialsMethodEnum.CredentialsStore) {
-            SpotTokenLoader            spotTokenLoader            = new SpotTokenLoader(this.credentialsId, this.credentialsId);
-            SpotTokenCredentialsLoader spotTokenCredentialsLoader = spotTokenLoader.getAdminCredentials();
-            this.secret = spotTokenCredentialsLoader.getSecret();
-            String token = this.secret.getPlainText();
-            LOGGER.info(String.format("*****************************secret: %s****************************",token));
-        }
-
-        LOGGER.info(String.format("*****************************BaseSpotinstCloud credentialsId: %s****************************",this.credentialsId));
     }
 
     //endregion

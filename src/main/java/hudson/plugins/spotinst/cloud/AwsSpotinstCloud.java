@@ -7,6 +7,7 @@ import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.CredentialsMethodEnum;
+import hudson.plugins.spotinst.credentials.SpotTokenCredentialsLoader;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleResultNewSpot;
@@ -19,6 +20,7 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -397,5 +399,21 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
 
     }
+
+    @DataBoundSetter
+    public void setCredentialsMethod(CredentialsMethodEnum credentialsMethod) {
+        this.credentialsMethod = credentialsMethod;
+        LOGGER.error(String.format("--------------------  credentialsMethod: %s", this.credentialsMethod));
+
+    }
+
+    @DataBoundSetter
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
+        LOGGER.error(String.format("---------------- credentialsId: %s", this.credentialsId));
+
+    }
+
+
     //endregion
 }
