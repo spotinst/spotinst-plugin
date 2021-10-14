@@ -47,11 +47,76 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   Boolean                           shouldRetriggerBuilds;
     private   ComputerConnector                 computerConnector;
     private   ConnectionMethodEnum              connectionMethod;
+    private   TerminationStrategyEnum           terminationStrategy;
     private   Boolean                           shouldUsePrivateIp;
     private   SpotGlobalExecutorOverride        globalExecutorOverride;
     //endregion
 
     //region Constructor
+    public BaseSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
+                             SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
+                             Boolean shouldRetriggerBuilds, String vmargs,
+                             EnvironmentVariablesNodeProperty environmentVariables,
+                             ToolLocationNodeProperty toolLocations, String accountId,
+                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
+                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride, TerminationStrategyEnum terminationStrategy) {
+
+        super(groupId);
+        this.groupId = groupId;
+        this.accountId = accountId;
+        this.labelString = labelString;
+        this.idleTerminationMinutes = idleTerminationMinutes;
+        this.workspaceDir = workspaceDir;
+        this.pendingInstances = new HashMap<>();
+        labelSet = Label.parse(labelString);
+
+        if (usage != null) {
+            this.usage = usage;
+        }
+        else {
+            this.usage = SlaveUsageEnum.NORMAL;
+        }
+
+        this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
+        this.tunnel = tunnel;
+        this.shouldUseWebsocket = shouldUseWebsocket;
+        this.vmargs = vmargs;
+        this.environmentVariables = environmentVariables;
+        this.toolLocations = toolLocations;
+        this.slaveInstancesDetailsByInstanceId = new HashMap<>();
+
+        if (connectionMethod != null) {
+            this.connectionMethod = connectionMethod;
+        }
+        else {
+            this.connectionMethod = ConnectionMethodEnum.JNLP;
+        }
+
+        if (terminationStrategy != null) {
+            this.terminationStrategy = terminationStrategy;
+        }
+        else {
+            this.terminationStrategy = TerminationStrategyEnum.IdleTerminationMinutes;
+        }
+
+        if (shouldUsePrivateIp != null) {
+            this.shouldUsePrivateIp = shouldUsePrivateIp;
+        }
+        else {
+            this.shouldUsePrivateIp = false;
+        }
+
+        this.computerConnector = computerConnector;
+
+        if (globalExecutorOverride != null) {
+            this.globalExecutorOverride = globalExecutorOverride;
+        }
+        else {
+            this.globalExecutorOverride = new SpotGlobalExecutorOverride(false, 1);
+        }
+
+    }
+
     public BaseSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                              SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                              Boolean shouldRetriggerBuilds, String vmargs,
@@ -696,6 +761,17 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.connectionMethod = connectionMethod;
     }
 
+    public TerminationStrategyEnum getTerminationStrategy() {
+        if (this.terminationStrategy == null) {
+            return TerminationStrategyEnum.IdleTerminationMinutes;
+        }
+
+        return terminationStrategy;
+    }
+
+    public void setTerminationStrategy(TerminationStrategyEnum terminationStrategy) {
+        this.terminationStrategy = terminationStrategy;
+    }
 
     public ComputerConnector getComputerConnector() {
         return computerConnector;
