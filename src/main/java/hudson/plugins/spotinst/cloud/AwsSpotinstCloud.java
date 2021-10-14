@@ -411,7 +411,9 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     public void setCredentialsId(String credentialsId) {
         this.credentialsId = credentialsId;
         LOGGER.error(String.format("---------------- credentialsId: %s", this.credentialsId));
-
+        if(this.credentialsMethod == CredentialsMethodEnum.CredentialsStore){
+            setSecret();
+        }
     }
 
 

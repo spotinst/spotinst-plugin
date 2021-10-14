@@ -769,6 +769,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public void setGlobalExecutorOverride(SpotGlobalExecutorOverride globalExecutorOverride) {
         this.globalExecutorOverride = globalExecutorOverride;
     }
+
+    public void setSecret() {
+        SpotTokenLoader spotTokenLoader = new SpotTokenLoader(this.credentialsId, this.credentialsId);
+        SpotTokenCredentialsLoader spotTokenCredentialsLoader = spotTokenLoader.getAdminCredentials();
+        this.secret = spotTokenCredentialsLoader.getSecret();
+    }
     //endregion
 
     //region Abstract Methods
