@@ -19,6 +19,7 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,11 +47,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                             EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
-                            Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride, TerminationStrategyEnum terminationStrategy) {
+                            Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride) {
 
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
-              computerConnector, shouldUsePrivateIp, globalExecutorOverride, terminationStrategy);
+              computerConnector, shouldUsePrivateIp, globalExecutorOverride);
 
         this.executorsForTypes = new LinkedList<>();
         executorsForInstanceType = new HashMap<>();
@@ -107,6 +108,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     public Boolean detachInstance(String instanceId) {
+        LOGGER.info("**************** terminationStrategy: " + this.terminationStrategy.getName());
         Boolean retVal = false;
 
         IAwsGroupRepo        awsGroupRepo           = RepoManager.getInstance().getAwsGroupRepo();
@@ -386,6 +388,12 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
     //endregion
 
+    //region Setters
+    @DataBoundSetter
+    public void setTerminationStrategy(TerminationStrategyEnum terminationStrategy) {
+        this.terminationStrategy = terminationStrategy;
+    }
+    //endregion
     //region Classes
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {

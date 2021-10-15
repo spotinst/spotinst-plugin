@@ -34,6 +34,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     protected String                            groupId;
     protected Map<String, PendingInstance>      pendingInstances;
     protected Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
+    protected TerminationStrategyEnum           terminationStrategy = TerminationStrategyEnum.IdleTerminationMinutes;
     private   String                            labelString;
     private   String                            idleTerminationMinutes;
     private   String                            workspaceDir;
@@ -47,7 +48,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   Boolean                           shouldRetriggerBuilds;
     private   ComputerConnector                 computerConnector;
     private   ConnectionMethodEnum              connectionMethod;
-    private   TerminationStrategyEnum           terminationStrategy;
     private   Boolean                           shouldUsePrivateIp;
     private   SpotGlobalExecutorOverride        globalExecutorOverride;
     //endregion
@@ -171,7 +171,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         else {
             this.globalExecutorOverride = new SpotGlobalExecutorOverride(false, 1);
         }
-
     }
     //endregion
 
