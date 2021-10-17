@@ -108,7 +108,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     public Boolean detachInstance(String instanceId) {
-        LOGGER.info("**************** terminationStrategy: " + this.terminationStrategy.getName());
         Boolean retVal = false;
 
         IAwsGroupRepo        awsGroupRepo           = RepoManager.getInstance().getAwsGroupRepo();

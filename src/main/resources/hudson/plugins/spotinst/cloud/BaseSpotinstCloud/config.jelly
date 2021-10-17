@@ -18,7 +18,7 @@
     </f:entry>
 
     <f:radioBlock checked="${instance == null || instance.terminationStrategy == null || instance.terminationStrategy == 'IdleTerminationMinutes'}" name="terminationStrategy" title="Idle minutes before termination" value="IdleTerminationMinutes" inline="true">
-        <f:entry title="${%Idle minutes before termination}" field="idleTerminationMinutes">
+        <f:entry field="idleTerminationMinutes">
         <f:textbox/>
         </f:entry>
     </f:radioBlock>

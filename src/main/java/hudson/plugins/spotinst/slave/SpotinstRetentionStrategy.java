@@ -19,7 +19,7 @@ public class SpotinstRetentionStrategy extends RetentionStrategy<SpotinstCompute
     private static final Logger LOGGER                     = LoggerFactory.getLogger(SpotinstRetentionStrategy.class);
     private static final int    STARTUP_TIME_DEFAULT_VALUE = 30;
 
-    public final int idleTerminationMinutes;
+    public final Integer idleTerminationMinutes;
 
     private transient ReentrantLock checkLock;
     //endregion
@@ -29,7 +29,10 @@ public class SpotinstRetentionStrategy extends RetentionStrategy<SpotinstCompute
     public SpotinstRetentionStrategy(String idleTerminationMinutes) {
         readResolve();
 
-        if (idleTerminationMinutes == null || idleTerminationMinutes.trim().isEmpty()) {
+        if(idleTerminationMinutes == null){
+            this.idleTerminationMinutes = null;
+        }
+        else if (idleTerminationMinutes.trim().isEmpty()) {
             this.idleTerminationMinutes = 0;
         }
         else {
@@ -80,8 +83,11 @@ public class SpotinstRetentionStrategy extends RetentionStrategy<SpotinstCompute
     private long CheckComputer(SpotinstComputer computer) {
         SpotinstSlave slave = computer.getNode();
 
-        if (idleTerminationMinutes == 0 || slave == null) {
-            return 1;
+        if(idleTerminationMinutes != null)
+        {
+            if (idleTerminationMinutes == 0 || slave == null) {
+                return 1;
+            }
         }
 
         if (slave.isSlavePending()) {
@@ -92,11 +98,12 @@ public class SpotinstRetentionStrategy extends RetentionStrategy<SpotinstCompute
 
             final long idleMilliseconds = System.currentTimeMillis() - computer.getIdleStartMilliseconds();
 
-            if (idleTerminationMinutes > 0) {
+            if(idleTerminationMinutes == null){
+                LOGGER.info(String.format("%s is idle, terminating..", computer.getName()));
+                slave.terminate();
+            }
+            else if (idleTerminationMinutes > 0) {
                 if (idleMilliseconds > TimeUnit.MINUTES.toMillis(idleTerminationMinutes)) {
-
-                    LOGGER.info(String.format("%s is idle for %s minutes, terminating..", computer.getName(),
-                                              TimeUnit.MILLISECONDS.toMinutes(idleMilliseconds)));
                     slave.terminate();
                 }
             }
