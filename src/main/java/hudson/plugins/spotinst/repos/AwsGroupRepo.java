@@ -8,6 +8,7 @@ import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleUpResult;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by ohadmuchnik on 05/11/2018.
@@ -55,6 +56,23 @@ public class AwsGroupRepo implements IAwsGroupRepo {
         try {
             AwsScaleUpResult scaleUpResult = SpotinstApi.awsScaleUp(groupId, adjustment, accountId);
             retVal = new ApiResponse<>(scaleUpResult);
+        }
+        catch (ApiException e) {
+            retVal = ExceptionHelper.handleDalException(e);
+        }
+
+        return retVal;
+    }
+
+    @Override
+    public ApiResponse<Map<String,String>> getAllInstanceTypes(String accountId) {
+        ApiResponse<Map<String,String>> retVal;
+
+        try {
+            Map<String,String> instances = SpotinstApi.getAllAwsInstanceTypes(accountId);
+
+            retVal = new ApiResponse<>(instances);
+
         }
         catch (ApiException e) {
             retVal = ExceptionHelper.handleDalException(e);

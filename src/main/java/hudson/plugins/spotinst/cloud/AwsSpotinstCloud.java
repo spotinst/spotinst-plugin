@@ -379,6 +379,15 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             }
         }
     }
+
+    private void getAllInstanceTypes() {
+        IAwsGroupRepo awsGroupRepo = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<Map<String,String>> allInstanceTypesResponse =
+                awsGroupRepo.getAllInstanceTypes( this.accountId);
+
+        Map<String,String> AllInstanceTypes = allInstanceTypesResponse.getValue();
+        AwsInstanceTypeDynamicEnum.setValues(AllInstanceTypes);
+    }
     //endregion
 
     //region Getters
