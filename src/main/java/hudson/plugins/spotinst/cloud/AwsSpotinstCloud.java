@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
+import hudson.plugins.spotinst.common.AwsInstanceTypeDynamicEnum;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
@@ -33,7 +34,8 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     private static final Logger LOGGER    = LoggerFactory.getLogger(AwsSpotinstCloud.class);
     private static final String CLOUD_URL = "aws/ec2";
 
-    protected Map<AwsInstanceTypeEnum, Integer>      executorsForInstanceType;
+    protected Map<AwsInstanceTypeEnum, Integer> constantExecutorsForInstanceType;
+    protected AwsInstanceTypeDynamicEnum        dynamicExecutorsForInstanceType;
     private   List<? extends SpotinstInstanceWeight> executorsForTypes;
     //endregion
 
@@ -52,14 +54,14 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
               computerConnector, shouldUsePrivateIp, globalExecutorOverride);
 
         this.executorsForTypes = new LinkedList<>();
-        executorsForInstanceType = new HashMap<>();
+        constantExecutorsForInstanceType = new HashMap<>();
 
         if (executorsForTypes != null) {
             this.executorsForTypes = executorsForTypes;
 
             for (SpotinstInstanceWeight executors : executorsForTypes) {
                 if (executors.getExecutors() != null) {
-                    executorsForInstanceType.put(executors.getAwsInstanceType(), executors.getExecutors());
+                    constantExecutorsForInstanceType.put(executors.getAwsInstanceType(), executors.getExecutors());
                 }
             }
         }
@@ -208,8 +210,8 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         AwsInstanceTypeEnum type = AwsInstanceTypeEnum.fromValue(instanceType);
 
         if (type != null) {
-            if (executorsForInstanceType.containsKey(type)) {
-                retVal = executorsForInstanceType.get(type);
+            if (constantExecutorsForInstanceType.containsKey(type)) {
+                retVal = constantExecutorsForInstanceType.get(type);
                 LOGGER.info(String.format("We have a weight definition for this type of %s", retVal));
             }
             else {
@@ -380,7 +382,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Getters
-    public List<? extends SpotinstInstanceWeight> getExecutorsForTypes() {
+    public List<? extends SpotinstInstanceWeight> geExecutorsForTypes() {
         return executorsForTypes;
     }
     //endregion
