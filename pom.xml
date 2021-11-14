@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>spotinst</artifactId>
-    <version>2.2.5-SNAPSHOT</version>
+    <version>2.2.6-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <name>Spotinst plugin</name>
@@ -98,7 +98,11 @@
             <artifactId>ssh-slaves</artifactId>
             <version>1.31.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>plain-credentials</artifactId>
+            <version>1.7</version>
+        </dependency>
     </dependencies>
 
     <repositories>
