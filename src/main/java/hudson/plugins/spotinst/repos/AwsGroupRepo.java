@@ -4,11 +4,11 @@ import hudson.plugins.spotinst.api.SpotinstApi;
 import hudson.plugins.spotinst.api.infra.ApiException;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.ExceptionHelper;
+import hudson.plugins.spotinst.model.aws.AwsInstanceType;
 import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
 import hudson.plugins.spotinst.model.aws.AwsScaleUpResult;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by ohadmuchnik on 05/11/2018.
@@ -65,11 +65,11 @@ public class AwsGroupRepo implements IAwsGroupRepo {
     }
 
     @Override
-    public ApiResponse<Map<String,String>> getAllInstanceTypes(String accountId) {
-        ApiResponse<Map<String,String>> retVal;
+    public ApiResponse<List<AwsInstanceType>> getAllInstanceTypes(String accountId) {
+        ApiResponse<List<AwsInstanceType>> retVal;
 
         try {
-            Map<String,String> instances = SpotinstApi.getAllAwsInstanceTypes(accountId);
+            List<AwsInstanceType> instances = SpotinstApi.getAllAwsInstanceTypes(accountId);
 
             retVal = new ApiResponse<>(instances);
 
