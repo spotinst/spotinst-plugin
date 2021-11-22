@@ -4,7 +4,7 @@
         <f:enum>${it.name()}</f:enum>
     </f:invisibleEntry>
 
-    <f:entry field="awsInstanceTypeFromAPI" title="awsInstanceTypeFromAPI">
+    <f:entry field="awsInstanceTypeFromAPI" title="${%Instance type}">
         <f:select/>
     </f:entry>
 

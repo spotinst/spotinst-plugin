@@ -58,8 +58,6 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     //region Classes
     @Extension
     public static final class DescriptorImpl extends Descriptor<SpotinstInstanceWeight> {
-        public DescriptorImpl() {
-        }
 
         @Override
         public String getDisplayName() {
