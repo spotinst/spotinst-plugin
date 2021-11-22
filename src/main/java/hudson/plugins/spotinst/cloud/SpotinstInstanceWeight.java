@@ -9,15 +9,19 @@ import hudson.plugins.spotinst.common.SpotinstContext;
 import hudson.plugins.spotinst.model.aws.AwsInstanceType;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
 
 /**
  * Created by ohadmuchnik on 18/07/2016.
@@ -140,6 +144,31 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             return retVal;
         }
 
+        public FormValidation doCheckAwsInstanceTypeFromAPI() {
+            String         accountId = SpotinstContext.getInstance().getAccountId();
+            String         token     = SpotinstContext.getInstance().getSpotinstToken();
+            int            isValid   = validateToken(token, accountId);
+
+            FormValidation result;
+            switch (isValid) {
+                case 0: {
+                    result = FormValidation.okWithMarkup(
+                            "<div style=\"color:green\">Instance types list is up-to-date</div>");
+                    break;
+                }
+                case 1: {
+                    result = FormValidation.error(
+                            "Invalid Spot tokenֿ\n In order to get the up-to-date instance types list please update Spot token in Configure System page");
+                    break;
+                }
+                default: {
+                    result = FormValidation.warning("Failed to process credentials validation");
+                    break;
+                }
+            }
+
+            return result;
+        }
     }
     //endregion
 
