@@ -84,9 +84,33 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
             if (isRequestSucceed) {
                 retVal = allInstanceTypesResponse.getValue();
+                //Log the new types
+                List<String> newTypesFromAPI = calcNewInstanceTypesFromAPI(retVal);
+                String massage = "There are %d new instance types loaded using API call, They are not in the constant Enum list: \n%s";
+                String massageWithList = String.format(massage, newTypesFromAPI.size(), newTypesFromAPI);
+                LOGGER.info(massageWithList);
             }
             else {
                 retVal = getConstantInstanceTypesList();
+            }
+
+            return retVal;
+        }
+
+        private List<String> calcNewInstanceTypesFromAPI(List<AwsInstanceType> instanceTypesFromAPI) {
+            List<String> retVal = new ArrayList<>();
+            for (AwsInstanceType instanceType : instanceTypesFromAPI) {
+                boolean isInEnumList = false;
+
+                for (AwsInstanceTypeEnum instanceTypeNum : AwsInstanceTypeEnum.values()) {
+                    if (instanceTypeNum.getValue().equals(instanceType.getInstanceType())) {
+                        isInEnumList = true;
+                    }
+                }
+
+                if (isInEnumList == false) {
+                    retVal.add(instanceType.getInstanceType());
+                }
             }
 
             return retVal;
