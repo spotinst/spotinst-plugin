@@ -24,7 +24,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     //region Members
     private AwsInstanceTypeEnum awsInstanceType;
     private Integer             executors;
-    private static String       awsInstanceTypeFromAPI;
+    private String              awsInstanceTypeFromAPI;
     //endregion
 
     //region Constructors
@@ -48,43 +48,10 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     }
     //endregion
 
-    //region Private Methods
-
-    @DataBoundSetter
-    public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
-        this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
-    }
-
-    private static List<AwsInstanceType> loadAllInstanceTypes() {
-        List<AwsInstanceType>              retVal                   = new ArrayList<>();
-        String                             accountId                = SpotinstContext.getInstance().getAccountId();
-        IAwsGroupRepo                      awsGroupRepo             = RepoManager.getInstance().getAwsGroupRepo();
-        ApiResponse<List<AwsInstanceType>> allInstanceTypesResponse = awsGroupRepo.getAllInstanceTypes(accountId);
-        Boolean isRequestSucceed = allInstanceTypesResponse.isRequestSucceed();
-
-        if (isRequestSucceed) {
-            retVal = allInstanceTypesResponse.getValue();
-        }
-        else {
-            for (AwsInstanceTypeEnum instanceTypeEnum : AwsInstanceTypeEnum.values()) {
-                String          type         = instanceTypeEnum.getValue();
-                Integer         cpus         = instanceTypeEnum.getExecutors();
-                AwsInstanceType instanceType = new AwsInstanceType();
-                instanceType.setInstanceType(type);
-                instanceType.setCpus(cpus);
-                retVal.add(instanceType);
-            }
-        }
-
-        return retVal;
-    }
-    //endregion
-
     //region Classes
     @Extension
     public static final class DescriptorImpl extends Descriptor<SpotinstInstanceWeight> {
-        public  DescriptorImpl(){
-            load();
+        public DescriptorImpl() {
         }
 
         @Override
@@ -93,10 +60,10 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         }
 
         public ListBoxModel doFillAwsInstanceTypeFromAPIItems() {
-            ListBoxModel retVal = new ListBoxModel();
+            ListBoxModel          retVal           = new ListBoxModel();
             List<AwsInstanceType> allInstanceTypes = loadAllInstanceTypes();
 
-            if(allInstanceTypes != null) {
+            if (allInstanceTypes != null) {
                 for (AwsInstanceType instanceType : allInstanceTypes) {
                     retVal.add(instanceType.getInstanceType());
                 }
@@ -104,6 +71,31 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
             return retVal;
         }
+
+        private List<AwsInstanceType> loadAllInstanceTypes() {
+            List<AwsInstanceType>              retVal                   = new ArrayList<>();
+            String                             accountId                = SpotinstContext.getInstance().getAccountId();
+            IAwsGroupRepo                      awsGroupRepo             = RepoManager.getInstance().getAwsGroupRepo();
+            ApiResponse<List<AwsInstanceType>> allInstanceTypesResponse = awsGroupRepo.getAllInstanceTypes(accountId);
+            Boolean                            isRequestSucceed         = allInstanceTypesResponse.isRequestSucceed();
+
+            if (isRequestSucceed) {
+                retVal = allInstanceTypesResponse.getValue();
+            }
+            else {
+                for (AwsInstanceTypeEnum instanceTypeEnum : AwsInstanceTypeEnum.values()) {
+                    String          type         = instanceTypeEnum.getValue();
+                    Integer         cpus         = instanceTypeEnum.getExecutors();
+                    AwsInstanceType instanceType = new AwsInstanceType();
+                    instanceType.setInstanceType(type);
+                    instanceType.setCpus(cpus);
+                    retVal.add(instanceType);
+                }
+            }
+
+            return retVal;
+        }
+
     }
     //endregion
 
@@ -114,6 +106,11 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
     public AwsInstanceTypeEnum getAwsInstanceType() {
         return awsInstanceType;
+    }
+
+    @DataBoundSetter
+    public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
+        this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
     }
     //endregion
 }
