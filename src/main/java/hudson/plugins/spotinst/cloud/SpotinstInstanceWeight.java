@@ -13,6 +13,8 @@ import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.List;
  */
 public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeight> {
     //region Members
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpotinstInstanceWeight.class);
     private AwsInstanceTypeEnum awsInstanceType;
     private Integer             executors;
     private String              awsInstanceTypeFromAPI;
@@ -73,7 +76,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         }
 
         private List<AwsInstanceType> loadAllInstanceTypes() {
-            List<AwsInstanceType>              retVal                   = new ArrayList<>();
+            List<AwsInstanceType>              retVal;
             String                             accountId                = SpotinstContext.getInstance().getAccountId();
             IAwsGroupRepo                      awsGroupRepo             = RepoManager.getInstance().getAwsGroupRepo();
             ApiResponse<List<AwsInstanceType>> allInstanceTypesResponse = awsGroupRepo.getAllInstanceTypes(accountId);
@@ -83,14 +86,22 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
                 retVal = allInstanceTypesResponse.getValue();
             }
             else {
-                for (AwsInstanceTypeEnum instanceTypeEnum : AwsInstanceTypeEnum.values()) {
-                    String          type         = instanceTypeEnum.getValue();
-                    Integer         cpus         = instanceTypeEnum.getExecutors();
-                    AwsInstanceType instanceType = new AwsInstanceType();
-                    instanceType.setInstanceType(type);
-                    instanceType.setCpus(cpus);
-                    retVal.add(instanceType);
-                }
+                retVal = getConstantInstanceTypesList();
+            }
+
+            return retVal;
+        }
+
+        private List<AwsInstanceType> getConstantInstanceTypesList() {
+            List<AwsInstanceType> retVal = new ArrayList<>();
+
+            for (AwsInstanceTypeEnum instanceTypeEnum : AwsInstanceTypeEnum.values()) {
+                String          type         = instanceTypeEnum.getValue();
+                Integer         cpus         = instanceTypeEnum.getExecutors();
+                AwsInstanceType instanceType = new AwsInstanceType();
+                instanceType.setInstanceType(type);
+                instanceType.setCpus(cpus);
+                retVal.add(instanceType);
             }
 
             return retVal;
