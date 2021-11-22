@@ -111,6 +111,18 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
         this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
+        this.awsInstanceType = null;
+    }
+
+    public String getAwsInstanceTypeFromAPI(){
+        String retVal;
+        if(this.awsInstanceType != null){
+            retVal = awsInstanceType.getValue();
+        }else{
+            retVal = awsInstanceTypeFromAPI;
+        }
+
+        return retVal;
     }
     //endregion
 }
