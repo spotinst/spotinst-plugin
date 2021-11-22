@@ -33,6 +33,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     private static final Logger LOGGER    = LoggerFactory.getLogger(AwsSpotinstCloud.class);
     private static final String CLOUD_URL = "aws/ec2";
 
+    protected Map<String, Integer>      executorsForInstanceTypeNew;
     protected Map<AwsInstanceTypeEnum, Integer>      executorsForInstanceType;
     private   List<? extends SpotinstInstanceWeight> executorsForTypes;
     //endregion
@@ -53,13 +54,26 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
         this.executorsForTypes = new LinkedList<>();
         executorsForInstanceType = new HashMap<>();
+        executorsForInstanceTypeNew = new HashMap<>();
+
 
         if (executorsForTypes != null) {
             this.executorsForTypes = executorsForTypes;
 
             for (SpotinstInstanceWeight executors : executorsForTypes) {
-                if (executors.getExecutors() != null) {
-                    executorsForInstanceType.put(executors.getAwsInstanceType(), executors.getExecutors());
+                if(executors.getAwsInstanceType() != null){
+                    if (executors.getExecutors() != null) {
+                        executorsForInstanceType.put(executors.getAwsInstanceType(), executors.getExecutors());
+                    }
+                    this.executorsForInstanceTypeNew = null;
+                }
+                else {
+                    if (executors.getAwsInstanceTypeFromAPI() != null) {
+                        if (executors.getExecutors() != null) {
+                            executorsForInstanceTypeNew.put(executors.getAwsInstanceTypeFromAPI(), executors.getExecutors());
+                        }
+                        this.executorsForInstanceType = null;
+                    }
                 }
             }
         }
@@ -204,18 +218,31 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //region Private Methods
     @Override
     protected Integer getNumOfExecutors(String instanceType) {
-        Integer             retVal;
-        AwsInstanceTypeEnum type = AwsInstanceTypeEnum.fromValue(instanceType);
+        Integer             retVal = null;
 
-        if (type != null) {
-            if (executorsForInstanceType.containsKey(type)) {
-                retVal = executorsForInstanceType.get(type);
-                LOGGER.info(String.format("We have a weight definition for this type of %s", retVal));
-            }
-            else {
-                retVal = super.getNumOfExecutors(instanceType);
+        if(executorsForInstanceType != null){
+            AwsInstanceTypeEnum type = AwsInstanceTypeEnum.fromValue(instanceType);
+            if (type != null) {
+                if (executorsForInstanceType.containsKey(type)) {
+                    retVal = executorsForInstanceType.get(type);
+                    LOGGER.info(String.format("We have a weight definition for this type of %s", retVal));
+                }
+                else {
+                    retVal = super.getNumOfExecutors(instanceType);
+                }
             }
         }
+
+        else if (executorsForInstanceTypeNew != null){
+                if (executorsForInstanceTypeNew.containsKey(instanceType)) {
+                    retVal = executorsForInstanceTypeNew.get(instanceType);
+                    LOGGER.info(String.format("We have a weight definition for this type of %s", retVal));
+                }
+                else {
+                    retVal = super.getNumOfExecutors(instanceType);
+                }
+        }
+
         else {
             retVal = super.getNumOfExecutors(instanceType);
         }
