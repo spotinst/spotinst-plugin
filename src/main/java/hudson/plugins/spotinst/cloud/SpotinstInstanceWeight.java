@@ -85,30 +85,39 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             if (isRequestSucceed) {
                 retVal = allInstanceTypesResponse.getValue();
                 //Log the new types
-                List<String> newTypesFromAPI = calcNewInstanceTypesFromAPI(retVal);
+                List<String> newTypesFromAPI = calcInstanceTypesFromList(retVal,true);
                 String massage = "There are %d new instance types loaded using API call, They are not in the constant Enum list: \n%s";
                 String massageWithList = String.format(massage, newTypesFromAPI.size(), newTypesFromAPI);
                 LOGGER.info(massageWithList);
             }
             else {
                 retVal = getConstantInstanceTypesList();
+                //Log the constant types
+                List<String> constantInstanceTypes = calcInstanceTypesFromList(retVal,false);
+                String massage = "Loading all instance types with an API call failed, using %d constant instance types: \n%s";
+                String massageWithList = String.format(massage, constantInstanceTypes.size(), constantInstanceTypes);
+                LOGGER.info(massageWithList);
             }
 
             return retVal;
         }
 
-        private List<String> calcNewInstanceTypesFromAPI(List<AwsInstanceType> instanceTypesFromAPI) {
+        private List<String> calcInstanceTypesFromList(List<AwsInstanceType> instanceTypesFromAPI, boolean isListFromAPI) {
             List<String> retVal = new ArrayList<>();
-            for (AwsInstanceType instanceType : instanceTypesFromAPI) {
-                boolean isInEnumList = false;
 
+            for (AwsInstanceType instanceType : instanceTypesFromAPI) {
+                boolean isInstanceInConstantEnum = false;
                 for (AwsInstanceTypeEnum instanceTypeNum : AwsInstanceTypeEnum.values()) {
                     if (instanceTypeNum.getValue().equals(instanceType.getInstanceType())) {
-                        isInEnumList = true;
+                        isInstanceInConstantEnum = true;
+                        break;
                     }
                 }
 
-                if (isInEnumList == false) {
+                if (isInstanceInConstantEnum == false && isListFromAPI == true) {
+                    retVal.add(instanceType.getInstanceType());
+                }
+                else if(isInstanceInConstantEnum == true && isListFromAPI == false){
                     retVal.add(instanceType.getInstanceType());
                 }
             }
