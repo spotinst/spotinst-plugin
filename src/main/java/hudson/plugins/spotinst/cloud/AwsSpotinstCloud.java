@@ -34,7 +34,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     private static final String CLOUD_URL = "aws/ec2";
 
     protected Map<String, Integer>      executorsForInstanceTypeNew;
-    protected Map<AwsInstanceTypeEnum, Integer>      executorsForInstanceType;
+    protected Map<String, Integer>      executorsForInstanceType;
     private   List<? extends SpotinstInstanceWeight> executorsForTypes;
     //endregion
 
@@ -61,20 +61,20 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             this.executorsForTypes = executorsForTypes;
 
             for (SpotinstInstanceWeight executors : executorsForTypes) {
-                if(executors.getAwsInstanceType() != null){
+//                if(executors.getAwsInstanceType() != null){
                     if (executors.getExecutors() != null) {
-                        executorsForInstanceType.put(executors.getAwsInstanceType(), executors.getExecutors());
+                        executorsForInstanceType.put(executors.getAwsInstanceTypeFromAPI(), executors.getExecutors());
                     }
                     this.executorsForInstanceTypeNew = null;
-                }
-                else {
-                    if (executors.getAwsInstanceTypeFromAPI() != null) {
-                        if (executors.getExecutors() != null) {
-                            executorsForInstanceTypeNew.put(executors.getAwsInstanceTypeFromAPI(), executors.getExecutors());
-                        }
-                        this.executorsForInstanceType = null;
-                    }
-                }
+                //}
+//                else {
+//                    if (executors.getAwsInstanceTypeFromAPI() != null) {
+//                        if (executors.getExecutors() != null) {
+//                            executorsForInstanceTypeNew.put(executors.getAwsInstanceTypeFromAPI(), executors.getExecutors());
+//                        }
+//                        this.executorsForInstanceType = null;
+//                    }
+               // }
             }
         }
     }

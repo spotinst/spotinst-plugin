@@ -38,7 +38,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     @DataBoundConstructor
     public SpotinstInstanceWeight(AwsInstanceTypeEnum awsInstanceType, Integer executors) {
         this.awsInstanceType = awsInstanceType;
-        this.executors = executors;
+        this.executors = 56;
     }
     //endregion
 
@@ -175,9 +175,9 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         return executors;
     }
 
-    public AwsInstanceTypeEnum getAwsInstanceType() {
-        return awsInstanceType;
-    }
+//    public AwsInstanceTypeEnum getAwsInstanceType() {
+//        return awsInstanceType;
+//    }
 
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
