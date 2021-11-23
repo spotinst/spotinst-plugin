@@ -2,15 +2,12 @@ package hudson.plugins.spotinst.model.aws;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.List;
-import java.util.Map;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AwsInstanceType {
 
     //region Members
-    String instanceType;
-    Integer cpus;
+    String  instanceType;
+    Integer executors;
     //endregion
 
     //region Public Methods
@@ -18,16 +15,16 @@ public class AwsInstanceType {
         this.instanceType = instanceType;
     }
 
-    public void setCpus(Integer cpus) {
-        this.cpus = cpus;
+    public void setExecutors(Integer executors) {
+        this.executors = executors;
     }
 
     public String getInstanceType() {
         return instanceType;
     }
 
-    public Integer getCpus() {
-        return cpus;
+    public Integer getExecutors() {
+        return executors;
     }
 
     //endregion

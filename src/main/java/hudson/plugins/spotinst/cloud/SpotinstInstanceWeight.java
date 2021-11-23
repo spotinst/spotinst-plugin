@@ -14,7 +14,6 @@ import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     @DataBoundConstructor
     public SpotinstInstanceWeight(AwsInstanceTypeEnum awsInstanceType, Integer executors) {
         this.awsInstanceType = awsInstanceType;
-        this.executors = 56;
+        this.executors = executors;
     }
     //endregion
 
@@ -135,7 +134,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
                 Integer         cpus         = instanceTypeEnum.getExecutors();
                 AwsInstanceType instanceType = new AwsInstanceType();
                 instanceType.setInstanceType(type);
-                instanceType.setCpus(cpus);
+                instanceType.setExecutors(cpus);
                 retVal.add(instanceType);
             }
 
@@ -175,22 +174,18 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         return executors;
     }
 
-//    public AwsInstanceTypeEnum getAwsInstanceType() {
-//        return awsInstanceType;
-//    }
-
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
         this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
-        this.awsInstanceType = null;
     }
 
     public String getAwsInstanceTypeFromAPI(){
         String retVal;
-        if(this.awsInstanceType != null){
-            retVal = awsInstanceType.getValue();
-        }else{
+
+        if(this.awsInstanceTypeFromAPI != null){
             retVal = awsInstanceTypeFromAPI;
+        }else{
+            retVal = awsInstanceType.getValue();
         }
 
         return retVal;
