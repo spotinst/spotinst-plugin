@@ -119,7 +119,7 @@ public class SpotLoadAwsInstanceTypes extends AsyncPeriodicWork {
             Integer         cpus         = instanceTypeEnum.getExecutors();
             AwsInstanceType instanceType = new AwsInstanceType();
             instanceType.setInstanceType(type);
-            instanceType.setExecutors(cpus);
+            instanceType.setvCPU(cpus);
             retVal.add(instanceType);
         }
 

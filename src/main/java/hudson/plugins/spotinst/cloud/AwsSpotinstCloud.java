@@ -387,18 +387,10 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {
 
-        public DescriptorImpl(){
-            if (SpotinstContext.getInstance().getAwsInstanceTypes() == null){
-                List<AwsInstanceType> awsInstanceTypes = SpotLoadAwsInstanceTypes.loadAllInstanceTypes();
-                SpotinstContext.getInstance().setAwsInstanceTypes(awsInstanceTypes);
-            }
-        }
-
         @Override
         public String getDisplayName() {
             return "Spot AWS Elastigroup";
         }
-
 
     }
     //endregion

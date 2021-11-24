@@ -7,7 +7,7 @@ public class AwsInstanceType {
 
     //region Members
     String  instanceType;
-    Integer executors;
+    Integer vCPU;
     //endregion
 
     //region Public Methods
@@ -15,16 +15,16 @@ public class AwsInstanceType {
         this.instanceType = instanceType;
     }
 
-    public void setExecutors(Integer executors) {
-        this.executors = executors;
+    public void setvCPU(Integer vCPU) {
+        this.vCPU = vCPU;
     }
 
     public String getInstanceType() {
         return instanceType;
     }
 
-    public Integer getExecutors() {
-        return executors;
+    public Integer getVCPU() {
+        return vCPU;
     }
 
     //endregion
