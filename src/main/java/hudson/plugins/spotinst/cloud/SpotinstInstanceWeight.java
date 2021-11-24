@@ -65,7 +65,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
         public ListBoxModel doFillAwsInstanceTypeFromAPIItems() {
             ListBoxModel          retVal           = new ListBoxModel();
-            List<AwsInstanceType> allInstanceTypes = loadAllInstanceTypes();
+            List<AwsInstanceType> allInstanceTypes = SpotinstContext.getInstance().getAwsInstanceTypes();
 
             if (allInstanceTypes != null) {
                 for (AwsInstanceType instanceType : allInstanceTypes) {
@@ -76,92 +76,21 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             return retVal;
         }
 
-        private List<AwsInstanceType> loadAllInstanceTypes() {
-            List<AwsInstanceType>              retVal;
-            String                             accountId                = SpotinstContext.getInstance().getAccountId();
-            IAwsGroupRepo                      awsGroupRepo             = RepoManager.getInstance().getAwsGroupRepo();
-            ApiResponse<List<AwsInstanceType>> allInstanceTypesResponse = awsGroupRepo.getAllInstanceTypes(accountId);
-            Boolean                            isRequestSucceed         = allInstanceTypesResponse.isRequestSucceed();
-
-            if (isRequestSucceed) {
-                retVal = allInstanceTypesResponse.getValue();
-                //Log the new types
-                List<String> newTypesFromAPI = calcInstanceTypesFromList(retVal,true);
-                String massage = "There are %d new instance types loaded using API call, They are not in the constant Enum list: \n%s";
-                String massageWithList = String.format(massage, newTypesFromAPI.size(), newTypesFromAPI);
-                LOGGER.info(massageWithList);
-            }
-            else {
-                retVal = getConstantInstanceTypesList();
-                //Log the constant types
-                List<String> constantInstanceTypes = calcInstanceTypesFromList(retVal,false);
-                String massage = "Loading all instance types with an API call failed, using %d constant instance types: \n%s";
-                String massageWithList = String.format(massage, constantInstanceTypes.size(), constantInstanceTypes);
-                LOGGER.info(massageWithList);
-            }
-
-            return retVal;
-        }
-
-        private List<String> calcInstanceTypesFromList(List<AwsInstanceType> instanceTypesFromAPI, boolean isListFromAPI) {
-            List<String> retVal = new ArrayList<>();
-
-            for (AwsInstanceType instanceType : instanceTypesFromAPI) {
-                boolean isInstanceInConstantEnum = false;
-                for (AwsInstanceTypeEnum instanceTypeNum : AwsInstanceTypeEnum.values()) {
-                    if (instanceTypeNum.getValue().equals(instanceType.getInstanceType())) {
-                        isInstanceInConstantEnum = true;
-                        break;
-                    }
-                }
-
-                if (isInstanceInConstantEnum == false && isListFromAPI == true) {
-                    retVal.add(instanceType.getInstanceType());
-                }
-                else if(isInstanceInConstantEnum == true && isListFromAPI == false){
-                    retVal.add(instanceType.getInstanceType());
-                }
-            }
-
-            return retVal;
-        }
-
-        private List<AwsInstanceType> getConstantInstanceTypesList() {
-            List<AwsInstanceType> retVal = new ArrayList<>();
-
-            for (AwsInstanceTypeEnum instanceTypeEnum : AwsInstanceTypeEnum.values()) {
-                String          type         = instanceTypeEnum.getValue();
-                Integer         cpus         = instanceTypeEnum.getExecutors();
-                AwsInstanceType instanceType = new AwsInstanceType();
-                instanceType.setInstanceType(type);
-                instanceType.setExecutors(cpus);
-                retVal.add(instanceType);
-            }
-
-            return retVal;
-        }
-
         public FormValidation doCheckAwsInstanceTypeFromAPI() {
-            String         accountId = SpotinstContext.getInstance().getAccountId();
-            String         token     = SpotinstContext.getInstance().getSpotinstToken();
-            int            isValid   = validateToken(token, accountId);
+            String                accountId        = SpotinstContext.getInstance().getAccountId();
+            String                token            = SpotinstContext.getInstance().getSpotinstToken();
+            List<AwsInstanceType> awsInstanceTypes = SpotinstContext.getInstance().getAwsInstanceTypes();
+            int                   isValid          = validateToken(token, accountId);
 
             FormValidation result;
-            switch (isValid) {
-                case 0: {
-                    result = FormValidation.okWithMarkup(
-                            "<div style=\"color:green\">Instance types list is up-to-date</div>");
-                    break;
-                }
-                case 1: {
-                    result = FormValidation.error(
-                            "Invalid Spot tokenֿ\n In order to get the up-to-date instance types list please update Spot token in Configure System page");
-                    break;
-                }
-                default: {
-                    result = FormValidation.warning("Failed to process credentials validation");
-                    break;
-                }
+            //TODO improve logs logic and messages
+            if (isValid != 0 && awsInstanceTypes == null || awsInstanceTypes.isEmpty() == false) {
+                result = FormValidation.error(
+                        "Invalid Spot tokenֿ\n In order to get the up-to-date instance types list please update Spot token in Configure System page");
+            }
+            else {
+                result = FormValidation.warning("Failed to process credentials validation");
+
             }
 
             return result;
@@ -172,6 +101,10 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     //region Getters / Setters
     public Integer getExecutors() {
         return executors;
+    }
+
+    public AwsInstanceTypeEnum getAwsInstanceType() {
+        return awsInstanceType;
     }
 
     @DataBoundSetter

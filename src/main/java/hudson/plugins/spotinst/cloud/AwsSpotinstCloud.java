@@ -6,10 +6,9 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
-import hudson.plugins.spotinst.model.aws.AwsGroupInstance;
-import hudson.plugins.spotinst.model.aws.AwsScaleResultNewInstance;
-import hudson.plugins.spotinst.model.aws.AwsScaleResultNewSpot;
-import hudson.plugins.spotinst.model.aws.AwsScaleUpResult;
+import hudson.plugins.spotinst.common.SpotinstContext;
+import hudson.plugins.spotinst.jobs.SpotLoadAwsInstanceTypes;
+import hudson.plugins.spotinst.model.aws.*;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.*;
@@ -387,6 +386,13 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //region Classes
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {
+
+        public DescriptorImpl(){
+            if (SpotinstContext.getInstance().getAwsInstanceTypes() == null){
+                List<AwsInstanceType> awsInstanceTypes = SpotLoadAwsInstanceTypes.loadAllInstanceTypes();
+                SpotinstContext.getInstance().setAwsInstanceTypes(awsInstanceTypes);
+            }
+        }
 
         @Override
         public String getDisplayName() {
