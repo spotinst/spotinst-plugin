@@ -14,8 +14,6 @@ import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
@@ -25,13 +23,11 @@ import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
  */
 public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeight> {
     //region Members
-    private static final Logger              LOGGER                               =
-            LoggerFactory.getLogger(SpotinstInstanceWeight.class);
-    public static final  String              TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM =
-            "Previously chosen type does not exist";
     private              AwsInstanceTypeEnum awsInstanceType;
     private              Integer             executors;
     private              String              awsInstanceTypeFromAPI;
+    public static final  String              TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM =
+            "Previously chosen type does not exist";
     //endregion
 
     //region Constructors
@@ -112,7 +108,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
-        if(awsInstanceTypeFromAPI.equals(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM) == false){
+        if (awsInstanceTypeFromAPI.equals(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM) == false) {
             this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
         }
     }

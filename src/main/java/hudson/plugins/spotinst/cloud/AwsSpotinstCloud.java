@@ -6,8 +6,6 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
-import hudson.plugins.spotinst.common.SpotinstContext;
-import hudson.plugins.spotinst.jobs.SpotLoadAwsInstanceTypes;
 import hudson.plugins.spotinst.model.aws.*;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;

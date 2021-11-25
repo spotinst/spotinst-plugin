@@ -1,23 +1,18 @@
 package hudson.plugins.spotinst.jobs;
 
+import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.TaskListener;
-import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.cloud.AwsSpotinstCloud;
-import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
-import hudson.plugins.spotinst.common.SpotinstContext;
-import hudson.plugins.spotinst.model.aws.AwsInstanceType;
-import hudson.plugins.spotinst.repos.IAwsGroupRepo;
-import hudson.plugins.spotinst.repos.RepoManager;
+import hudson.plugins.spotinst.cloud.SpotAWSInstanceTypesConfig;
 import hudson.slaves.Cloud;
 import jenkins.model.Jenkins;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+@Extension
 public class SpotLoadAwsInstanceTypes extends AsyncPeriodicWork {
 
     //region Members
@@ -48,82 +43,11 @@ public class SpotLoadAwsInstanceTypes extends AsyncPeriodicWork {
         }
 
         if (isAwsCloudExist == true) {
-            List<AwsInstanceType> awsInstanceTypes = loadAllInstanceTypes();
-            SpotinstContext.getInstance().setAwsInstanceTypes(awsInstanceTypes);
+            SpotAWSInstanceTypesConfig.loadAllInstanceTypes();
         }
         else {
             LOGGER.info("There are no AWS clouds to load instance types into");
         }
-    }
-
-    public static List<AwsInstanceType> loadAllInstanceTypes() {
-        List<AwsInstanceType>              retVal;
-        String                             accountId                = SpotinstContext.getInstance().getAccountId();
-        IAwsGroupRepo                      awsGroupRepo             = RepoManager.getInstance().getAwsGroupRepo();
-        ApiResponse<List<AwsInstanceType>> allInstanceTypesResponse = awsGroupRepo.getAllInstanceTypes(accountId);
-        Boolean                            isRequestSucceed         = allInstanceTypesResponse.isRequestSucceed();
-
-        if (isRequestSucceed) {
-            retVal = allInstanceTypesResponse.getValue();
-            //Log the new types
-            List<String> newTypesFromAPI = calcInstanceTypesFromList(retVal, true);
-            String       massage         =
-                    "There are %d new instance types loaded using API call, They are not in the constant Enum list: \n%s";
-            String       massageWithList = String.format(massage, newTypesFromAPI.size(), newTypesFromAPI);
-            LOGGER.info(massageWithList);
-        }
-        else {
-            retVal = getConstantInstanceTypesList();
-            //Log the constant types
-            List<String> constantInstanceTypes = calcInstanceTypesFromList(retVal, false);
-            String       massage               =
-                    "Loading all instance types with an API call failed, using %d constant instance types: \n%s";
-            String       massageWithList       =
-                    String.format(massage, constantInstanceTypes.size(), constantInstanceTypes);
-            LOGGER.info(massageWithList);
-        }
-
-        return retVal;
-    }
-
-
-    private static List<String> calcInstanceTypesFromList(List<AwsInstanceType> instanceTypesFromAPI,
-                                                          boolean isListFromAPI) {
-        List<String> retVal = new ArrayList<>();
-
-        for (AwsInstanceType instanceType : instanceTypesFromAPI) {
-            boolean isInstanceInConstantEnum = false;
-            for (AwsInstanceTypeEnum instanceTypeNum : AwsInstanceTypeEnum.values()) {
-                if (instanceTypeNum.getValue().equals(instanceType.getInstanceType())) {
-                    isInstanceInConstantEnum = true;
-                    break;
-                }
-            }
-
-            if (isInstanceInConstantEnum == false && isListFromAPI == true) {
-                retVal.add(instanceType.getInstanceType());
-            }
-            else if (isInstanceInConstantEnum == true && isListFromAPI == false) {
-                retVal.add(instanceType.getInstanceType());
-            }
-        }
-
-        return retVal;
-    }
-
-    private static List<AwsInstanceType> getConstantInstanceTypesList() {
-        List<AwsInstanceType> retVal = new ArrayList<>();
-
-        for (AwsInstanceTypeEnum instanceTypeEnum : AwsInstanceTypeEnum.values()) {
-            String          type         = instanceTypeEnum.getValue();
-            Integer         cpus         = instanceTypeEnum.getExecutors();
-            AwsInstanceType instanceType = new AwsInstanceType();
-            instanceType.setInstanceType(type);
-            instanceType.setvCPU(cpus);
-            retVal.add(instanceType);
-        }
-
-        return retVal;
     }
 
     @Override
