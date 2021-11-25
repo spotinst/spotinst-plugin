@@ -16,8 +16,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 import java.util.List;
 
 import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
@@ -27,10 +25,13 @@ import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
  */
 public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeight> {
     //region Members
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpotinstInstanceWeight.class);
-    private AwsInstanceTypeEnum awsInstanceType;
-    private Integer             executors;
-    private String              awsInstanceTypeFromAPI;
+    private static final Logger              LOGGER                               =
+            LoggerFactory.getLogger(SpotinstInstanceWeight.class);
+    public static final  String              TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM =
+            "Previously chosen type does not exist";
+    private              AwsInstanceTypeEnum awsInstanceType;
+    private              Integer             executors;
+    private              String              awsInstanceTypeFromAPI;
     //endregion
 
     //region Constructors
@@ -71,26 +72,28 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
                 for (AwsInstanceType instanceType : allInstanceTypes) {
                     retVal.add(instanceType.getInstanceType());
                 }
+                if (retVal.size() == AwsInstanceTypeEnum.values().length) {
+                    //Edge case - add list item when fallback to constant enum not contains new types that were chosen by the user
+                    retVal.add(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM);
+                }
             }
 
             return retVal;
         }
 
         public FormValidation doCheckAwsInstanceTypeFromAPI() {
-            String                accountId        = SpotinstContext.getInstance().getAccountId();
-            String                token            = SpotinstContext.getInstance().getSpotinstToken();
-            List<AwsInstanceType> awsInstanceTypes = SpotinstContext.getInstance().getAwsInstanceTypes();
-            int                   isValid          = validateToken(token, accountId);
+            String accountId = SpotinstContext.getInstance().getAccountId();
+            String token     = SpotinstContext.getInstance().getSpotinstToken();
+            int    isValid   = validateToken(token, accountId);
 
             FormValidation result;
-            //TODO improve logs logic and messages
-            if (isValid != 0 && awsInstanceTypes == null || awsInstanceTypes.isEmpty() == false) {
+            if (isValid != 0) {
                 result = FormValidation.error(
-                        "Invalid Spot tokenֿ\n In order to get the up-to-date instance types list please update Spot token in Configure System page");
+                        "Invalid Spot token. In order to get the up-to-date instance types list please update Spot token in Configure System page");
             }
             else {
-                result = FormValidation.warning("Failed to process credentials validation");
-
+                result = FormValidation.okWithMarkup(
+                        "<div style=\"color:green\">instance types list is up-to-date</div>");
             }
 
             return result;
@@ -109,15 +112,26 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
-        this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
+        if(awsInstanceTypeFromAPI.equals(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM) == false){
+            this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
+        }
     }
 
-    public String getAwsInstanceTypeFromAPI(){
+    public String getAwsInstanceTypeFromAPI() {
         String retVal;
+        String accountId = SpotinstContext.getInstance().getAccountId();
+        String token     = SpotinstContext.getInstance().getSpotinstToken();
+        int    isValid   = validateToken(token, accountId);
 
-        if(this.awsInstanceTypeFromAPI != null){
-            retVal = awsInstanceTypeFromAPI;
-        }else{
+        if (this.awsInstanceTypeFromAPI != null) {
+            if (AwsInstanceTypeEnum.fromValue(this.awsInstanceTypeFromAPI) == null && isValid != 0) {
+                retVal = TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM;
+            }
+            else {
+                retVal = awsInstanceTypeFromAPI;
+            }
+        }
+        else {
             retVal = awsInstanceType.getValue();
         }
 

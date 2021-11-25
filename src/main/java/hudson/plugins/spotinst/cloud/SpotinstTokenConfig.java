@@ -9,8 +9,6 @@ import hudson.plugins.spotinst.common.CredentialsMethodEnum;
 import hudson.plugins.spotinst.common.SpotinstContext;
 import hudson.plugins.spotinst.credentials.SpotTokenCredentials;
 import hudson.plugins.spotinst.credentials.CredentialsStoreReader;
-import hudson.plugins.spotinst.jobs.SpotLoadAwsInstanceTypes;
-import hudson.plugins.spotinst.model.aws.AwsInstanceType;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -25,7 +23,6 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by ohadmuchnik on 18/07/2016.
@@ -57,11 +54,6 @@ public class SpotinstTokenConfig extends GlobalConfiguration {
 
         SpotinstContext.getInstance().setAccountId(accountId);
         SpotinstContext.getInstance().setSpotinstToken(tokenToUse);
-
-        if (SpotinstContext.getInstance().getAwsInstanceTypes() == null){
-            List<AwsInstanceType> awsInstanceTypes = SpotLoadAwsInstanceTypes.loadAllInstanceTypes();
-            SpotinstContext.getInstance().setAwsInstanceTypes(awsInstanceTypes);
-        }
     }
 
     @Override
