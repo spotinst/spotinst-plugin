@@ -8,8 +8,6 @@ import hudson.plugins.spotinst.model.aws.AwsInstanceType;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import jenkins.model.GlobalConfiguration;
-import net.sf.json.JSONObject;
-import org.kohsuke.stapler.StaplerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,19 +26,12 @@ public class SpotAWSInstanceTypesConfig extends GlobalConfiguration {
         loadAllInstanceTypes();
     }
 
-    @Override
-    public boolean configure(StaplerRequest req, JSONObject json) {
-        loadAllInstanceTypes();
-        save();
-        return true;
-    }
-
     public static void loadAllInstanceTypes() {
         List<AwsInstanceType>              retVal;
         String                             accountId                = SpotinstContext.getInstance().getAccountId();
         IAwsGroupRepo                      awsGroupRepo             = RepoManager.getInstance().getAwsGroupRepo();
         ApiResponse<List<AwsInstanceType>> allInstanceTypesResponse = awsGroupRepo.getAllInstanceTypes(accountId);
-        Boolean                            isRequestSucceed         = allInstanceTypesResponse.isRequestSucceed();
+        boolean                            isRequestSucceed         = allInstanceTypesResponse.isRequestSucceed();
 
         if (isRequestSucceed) {
             retVal = allInstanceTypesResponse.getValue();

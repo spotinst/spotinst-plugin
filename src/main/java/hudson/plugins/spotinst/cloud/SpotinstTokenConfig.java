@@ -94,7 +94,7 @@ public class SpotinstTokenConfig extends GlobalConfiguration {
 
         SpotinstContext.getInstance().setSpotinstToken(tokenToUse);
         SpotinstContext.getInstance().setAccountId(accountId);
-
+        SpotAWSInstanceTypesConfig.loadAllInstanceTypes();
         return true;
     }
 
