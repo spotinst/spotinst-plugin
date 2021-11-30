@@ -201,7 +201,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //region Private Methods
     @Override
     protected Integer getNumOfExecutors(String instanceType) {
-        Integer retVal;
+        Integer retVal = null;
 
         if (instanceType != null) {
             if (executorsForInstanceType.containsKey(instanceType)) {
@@ -211,9 +211,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             else {
                 retVal = super.getNumOfExecutors(instanceType);
             }
-        }
-        else {
-            retVal = super.getNumOfExecutors(instanceType);
         }
 
         return retVal;

@@ -38,7 +38,7 @@ public class SpotAWSInstanceTypesConfig extends GlobalConfiguration {
             //Log the new types
             List<String> newTypesFromAPI = calcInstanceTypesFromList(retVal, true);
             String massage =
-                    "There are %d new instance types loaded using API call, They are not in the constant Enum list: \n%s";
+                    "There are %d new instance types loaded using API call, They are not in the constant Enum list: %n%s";
             String massageWithList = String.format(massage, newTypesFromAPI.size(), newTypesFromAPI);
             LOGGER.info(massageWithList);
         }
@@ -47,7 +47,7 @@ public class SpotAWSInstanceTypesConfig extends GlobalConfiguration {
             //Log the constant types
             List<String> constantInstanceTypes = calcInstanceTypesFromList(retVal, false);
             String massage =
-                    "Loading all instance types with an API call failed, using %d constant instance types: \n%s";
+                    "Loading all instance types with an API call failed, using %d constant instance types: %n%s";
             String massageWithList = String.format(massage, constantInstanceTypes.size(), constantInstanceTypes);
             LOGGER.info(massageWithList);
         }
