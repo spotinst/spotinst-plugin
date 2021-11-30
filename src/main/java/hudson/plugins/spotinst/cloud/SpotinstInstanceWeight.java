@@ -3,17 +3,15 @@ package hudson.plugins.spotinst.cloud;
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.SpotinstContext;
 import hudson.plugins.spotinst.model.aws.AwsInstanceType;
-import hudson.plugins.spotinst.repos.IAwsGroupRepo;
-import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+
 import java.util.List;
 
 import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
@@ -23,11 +21,11 @@ import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
  */
 public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeight> {
     //region Members
-    private              AwsInstanceTypeEnum awsInstanceType;
-    private              Integer             executors;
-    private              String              awsInstanceTypeFromAPI;
-    public static final  String              TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM =
-            "Previously chosen type does not exist";
+    private AwsInstanceTypeEnum awsInstanceType;
+    private Integer             executors;
+    private String              awsInstanceTypeFromAPI;
+    //    public static final String              TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM =
+    //            "Previously chosen type does not exist";
     //endregion
 
     //region Constructors
@@ -68,10 +66,10 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
                 for (AwsInstanceType instanceType : allInstanceTypes) {
                     retVal.add(instanceType.getInstanceType());
                 }
-                if (retVal.size() == AwsInstanceTypeEnum.values().length) {
-                    //Edge case - add list item when fallback to constant enum not contains new types that were chosen by the user
-                    retVal.add(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM);
-                }
+                //                if (retVal.size() == AwsInstanceTypeEnum.values().length) {
+                //                    //Edge case - add list item when fallback to constant enum not contains new types that were chosen by the user
+                //                    retVal.add(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM);
+                //                }
             }
 
             return retVal;
@@ -85,7 +83,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             FormValidation result;
             if (isValid != 0) {
                 result = FormValidation.error(
-                        "Invalid Spot token. In order to get the up-to-date instance types list please update Spot token in Configure System page");
+                        "Invalid Spot token!\nUsage of this configuration might not work as expected.\nIn order to get the up-to-date instance types data please update Spot token in Configure System page.");
             }
             else {
                 result = FormValidation.okWithMarkup(
@@ -108,9 +106,9 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
-        if (awsInstanceTypeFromAPI.equals(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM) == false) {
-            this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
-        }
+        // if (awsInstanceTypeFromAPI.equals(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM) == false) {
+        this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
+        // }
     }
 
     public String getAwsInstanceTypeFromAPI() {
@@ -120,12 +118,22 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         int    isValid   = validateToken(token, accountId);
 
         if (this.awsInstanceTypeFromAPI != null) {
+
+            /*
+            If the user Previously chosen was a type that not exist in the hard coded list
+             and did not configure the token right, we will present the chosen type and set the default vCPU to 1
+             The descriptor of this class will show a warning message will note the user that something is wrong,
+             and point to authentication fix before saving this configuration.
+             */
             if (AwsInstanceTypeEnum.fromValue(this.awsInstanceTypeFromAPI) == null && isValid != 0) {
-                retVal = TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM;
+                AwsInstanceType instanceType = new AwsInstanceType();
+                instanceType.setInstanceType(awsInstanceTypeFromAPI);
+                instanceType.setvCPU(1);
+                SpotinstContext.getInstance().getAwsInstanceTypes().add(instanceType);
             }
-            else {
-                retVal = awsInstanceTypeFromAPI;
-            }
+
+            retVal = awsInstanceTypeFromAPI;
+
         }
         else {
             retVal = awsInstanceType.getValue();

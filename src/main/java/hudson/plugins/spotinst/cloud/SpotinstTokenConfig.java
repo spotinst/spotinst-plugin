@@ -95,6 +95,8 @@ public class SpotinstTokenConfig extends GlobalConfiguration {
         SpotinstContext.getInstance().setSpotinstToken(tokenToUse);
         SpotinstContext.getInstance().setAccountId(accountId);
         SpotAWSInstanceTypesConfig.loadAllInstanceTypes();
+
+        //consider return false if token is not valid to prevent saving wrong configuration
         return true;
     }
 
