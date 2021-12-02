@@ -17,7 +17,6 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -386,7 +385,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         public String getDisplayName() {
             return "Spot AWS Elastigroup";
         }
-
     }
     //endregion
 }

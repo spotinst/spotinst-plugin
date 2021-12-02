@@ -66,10 +66,6 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
                 for (AwsInstanceType instanceType : allInstanceTypes) {
                     retVal.add(instanceType.getInstanceType());
                 }
-                //                if (retVal.size() == AwsInstanceTypeEnum.values().length) {
-                //                    //Edge case - add list item when fallback to constant enum not contains new types that were chosen by the user
-                //                    retVal.add(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM);
-                //                }
             }
 
             return retVal;
@@ -83,7 +79,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             FormValidation result;
             if (isValid != 0) {
                 result = FormValidation.error(
-                        "Invalid Spot token!\nUsage of this configuration might not work as expected.\nIn order to get the up-to-date instance types data please update Spot token in Configure System page.");
+                        "Usage of this configuration might not work as expected.\nIn order to get the up-to-date instance types please update the Spot token on the “Configure System” page.");
             }
             else {
                 result = FormValidation.okWithMarkup(
