@@ -61,7 +61,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
         public ListBoxModel doFillAwsInstanceTypeFromAPIItems() {
             ListBoxModel          retVal           = new ListBoxModel();
-            List<AwsInstanceType> allInstanceTypes = SpotAwsInstanceTypesHelper.loadAllInstanceTypes();
+            List<AwsInstanceType> allInstanceTypes = SpotAwsInstanceTypesHelper.getAllInstanceTypes();
 
             if (allInstanceTypes != null) {
                 for (AwsInstanceType instanceType : allInstanceTypes) {
@@ -76,8 +76,6 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             String  accountId                 = SpotinstContext.getInstance().getAccountId();
             String  token                     = SpotinstContext.getInstance().getSpotinstToken();
             int     isValid                   = validateToken(token, accountId);
-            //TODO - check with Ziv why needed here (if not call here, error message display)
-            SpotAwsInstanceTypesHelper.loadAllInstanceTypes();
             Boolean isInstanceTypesListUpdate = SpotAwsInstanceTypesHelper.isInstanceTypesListUpdate();
 
             FormValidation result;
@@ -100,6 +98,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         return executors;
     }
 
+    //Deprecated
     public AwsInstanceTypeEnum getAwsInstanceType() {
         return awsInstanceType;
     }
@@ -110,7 +109,6 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
     }
 
     public String getAwsInstanceTypeFromAPI() {
-        //TODO - CR
         String retVal;
         String accountId = SpotinstContext.getInstance().getAccountId();
         String token     = SpotinstContext.getInstance().getSpotinstToken();
@@ -124,7 +122,10 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
              The descriptor of this class will show a warning message will note the user that something is wrong,
              and point to authentication fix before saving this configuration.
              */
-            if (AwsInstanceTypeEnum.fromValue(this.awsInstanceTypeFromAPI) == null && isValid != 0) {
+            List<AwsInstanceType> types = SpotAwsInstanceTypesHelper.getAllInstanceTypes();
+            boolean isTypeInList = types.stream().anyMatch(i -> i.getInstanceType().equals(this.awsInstanceTypeFromAPI));
+
+            if (isTypeInList == false && isValid != 0) {
                 AwsInstanceType instanceType = new AwsInstanceType();
                 instanceType.setInstanceType(awsInstanceTypeFromAPI);
                 instanceType.setvCPU(1);
