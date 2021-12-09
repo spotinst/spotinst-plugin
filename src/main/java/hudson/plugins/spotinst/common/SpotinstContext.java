@@ -2,6 +2,7 @@ package hudson.plugins.spotinst.common;
 
 import hudson.plugins.spotinst.model.aws.AwsInstanceType;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -14,6 +15,7 @@ public class SpotinstContext {
     private        String                spotinstToken;
     private        String                accountId;
     private        List<AwsInstanceType> awsInstanceTypes;
+    private        Date                  awsInstanceTypesLastUpdate = null;
     //endregion
 
     public static SpotinstContext getInstance() {
@@ -47,5 +49,14 @@ public class SpotinstContext {
     public void setAwsInstanceTypes(List<AwsInstanceType> awsInstanceTypes) {
         this.awsInstanceTypes = awsInstanceTypes;
     }
+
+    public Date getAwsInstanceTypesLastUpdate() {
+        return awsInstanceTypesLastUpdate;
+    }
+
+    public void setAwsInstanceTypesLastUpdate(Date awsInstanceTypesLastUpdate) {
+        this.awsInstanceTypesLastUpdate = awsInstanceTypesLastUpdate;
+    }
     //endregion
+
 }

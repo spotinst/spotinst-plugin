@@ -2,6 +2,9 @@ package hudson.plugins.spotinst.model.aws;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * Created by Liron Arad on 15/11/2021.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AwsInstanceType {
 
@@ -26,6 +29,5 @@ public class AwsInstanceType {
     public Integer getVCPU() {
         return vCPU;
     }
-
     //endregion
 }

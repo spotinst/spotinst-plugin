@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
+import hudson.plugins.spotinst.common.SpotAwsInstanceTypesHelper;
 import hudson.plugins.spotinst.common.SpotinstContext;
 import hudson.plugins.spotinst.model.aws.AwsInstanceType;
 import hudson.util.FormValidation;
@@ -21,11 +22,11 @@ import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
  */
 public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeight> {
     //region Members
-    private AwsInstanceTypeEnum awsInstanceType;
     private Integer             executors;
+    //TODO improve naming
     private String              awsInstanceTypeFromAPI;
-    //    public static final String              TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM =
-    //            "Previously chosen type does not exist";
+    //Deprecated
+    private AwsInstanceTypeEnum awsInstanceType;
     //endregion
 
     //region Constructors
@@ -60,7 +61,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
         public ListBoxModel doFillAwsInstanceTypeFromAPIItems() {
             ListBoxModel          retVal           = new ListBoxModel();
-            List<AwsInstanceType> allInstanceTypes = SpotinstContext.getInstance().getAwsInstanceTypes();
+            List<AwsInstanceType> allInstanceTypes = SpotAwsInstanceTypesHelper.loadAllInstanceTypes();
 
             if (allInstanceTypes != null) {
                 for (AwsInstanceType instanceType : allInstanceTypes) {
@@ -72,14 +73,17 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         }
 
         public FormValidation doCheckAwsInstanceTypeFromAPI() {
-            String accountId = SpotinstContext.getInstance().getAccountId();
-            String token     = SpotinstContext.getInstance().getSpotinstToken();
-            int    isValid   = validateToken(token, accountId);
+            String  accountId                 = SpotinstContext.getInstance().getAccountId();
+            String  token                     = SpotinstContext.getInstance().getSpotinstToken();
+            int     isValid                   = validateToken(token, accountId);
+            //TODO - check with Ziv why needed here (if not call here, error message display)
+            SpotAwsInstanceTypesHelper.loadAllInstanceTypes();
+            Boolean isInstanceTypesListUpdate = SpotAwsInstanceTypesHelper.isInstanceTypesListUpdate();
 
             FormValidation result;
-            if (isValid != 0) {
+            if (isValid != 0 || isInstanceTypesListUpdate == false) {
                 result = FormValidation.error(
-                        "Usage of this configuration might not work as expected.\nIn order to get the up-to-date instance types please update the Spot token on the “Configure System” page.");
+                        "Usage of this configuration might not work as expected. In order to get the up-to-date instance types please check the Spot token on the “Configure System” page.");
             }
             else {
                 result = FormValidation.okWithMarkup(
@@ -102,12 +106,11 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
     @DataBoundSetter
     public void setAwsInstanceTypeFromAPI(String awsInstanceTypeFromAPI) {
-        // if (awsInstanceTypeFromAPI.equals(TYPE_DOES_NOT_EXIST_IN_CONSTANT_ENUM) == false) {
         this.awsInstanceTypeFromAPI = awsInstanceTypeFromAPI;
-        // }
     }
 
     public String getAwsInstanceTypeFromAPI() {
+        //TODO - CR
         String retVal;
         String accountId = SpotinstContext.getInstance().getAccountId();
         String token     = SpotinstContext.getInstance().getSpotinstToken();

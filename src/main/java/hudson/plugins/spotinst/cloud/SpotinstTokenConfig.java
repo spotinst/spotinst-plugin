@@ -14,7 +14,6 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
@@ -94,9 +93,7 @@ public class SpotinstTokenConfig extends GlobalConfiguration {
 
         SpotinstContext.getInstance().setSpotinstToken(tokenToUse);
         SpotinstContext.getInstance().setAccountId(accountId);
-        SpotAWSInstanceTypesConfig.loadAllInstanceTypes();
 
-        //consider return false if token is not valid to prevent saving wrong configuration
         return true;
     }
 

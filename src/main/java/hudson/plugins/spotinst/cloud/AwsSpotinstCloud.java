@@ -52,7 +52,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
         if (executorsForTypes != null) {
             this.executorsForTypes = executorsForTypes;
-
             for (SpotinstInstanceWeight executors : executorsForTypes) {
                     if (executors.getExecutors() != null) {
                         executorsForInstanceType.put(executors.getAwsInstanceTypeFromAPI(), executors.getExecutors());
@@ -200,6 +199,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //region Private Methods
     @Override
     protected Integer getNumOfExecutors(String instanceType) {
+        //TODO - CR
         Integer retVal = null;
 
         if (instanceType != null) {

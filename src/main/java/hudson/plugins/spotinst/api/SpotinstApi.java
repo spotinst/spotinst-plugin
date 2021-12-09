@@ -19,7 +19,7 @@ public class SpotinstApi {
 
     //region Members
     private static final Logger LOGGER                  = LoggerFactory.getLogger(SpotinstApi.class);
-    private final static String SPOTINST_API_HOST       = "http://localhost:3100";
+    private final static String SPOTINST_API_HOST       = "https://api.spotinst.io";
     private final static String HEADER_AUTH             = "Authorization";
     private final static String AUTH_PREFIX             = "Bearer ";
     private final static String HEADER_CONTENT_TYPE     = "Content-Type";
@@ -122,19 +122,18 @@ public class SpotinstApi {
     }
 
     public static List<AwsInstanceType> getAllAwsInstanceTypes(String accountId) throws ApiException {
-        List<AwsInstanceType> retVal      = null;
+        List<AwsInstanceType> retVal;
         Map<String, String>   headers     = buildHeaders();
         Map<String, String>   queryParams = buildQueryParams(accountId);
+        queryParams.put("distinctTypesList","true");
 
         RestResponse response =
-                RestClient.sendGet(SPOTINST_API_HOST + "/aws/ec2/instanceTypesSummary", headers, queryParams);
+                RestClient.sendGet(SPOTINST_API_HOST + "/aws/ec2/instanceType", headers, queryParams);
 
         AwsInstanceTypesResponse
                 allAwsInstanceTypesResponse = getCastedResponse(response, AwsInstanceTypesResponse.class);
 
-        if (allAwsInstanceTypesResponse.getResponse().getItems().size() > 0) {
-            retVal = allAwsInstanceTypesResponse.getResponse().getItems();
-        }
+        retVal = allAwsInstanceTypesResponse.getResponse().getItems();
 
         return retVal;
     }
