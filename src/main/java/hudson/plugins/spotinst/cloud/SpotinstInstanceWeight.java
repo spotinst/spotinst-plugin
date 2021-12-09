@@ -73,22 +73,19 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
         }
 
         public FormValidation doCheckAwsInstanceTypeFromAPI() {
+            FormValidation retVal = null;
+
             String  accountId                 = SpotinstContext.getInstance().getAccountId();
             String  token                     = SpotinstContext.getInstance().getSpotinstToken();
             int     isValid                   = validateToken(token, accountId);
             Boolean isInstanceTypesListUpdate = SpotAwsInstanceTypesHelper.isInstanceTypesListUpdate();
 
-            FormValidation result;
             if (isValid != 0 || isInstanceTypesListUpdate == false) {
-                result = FormValidation.error(
+                retVal = FormValidation.error(
                         "Usage of this configuration might not work as expected. In order to get the up-to-date instance types please check the Spot token on the “Configure System” page.");
             }
-            else {
-                result = FormValidation.okWithMarkup(
-                        "<div style=\"color:green\">instance types list is up-to-date</div>");
-            }
 
-            return result;
+            return retVal;
         }
     }
     //endregion
