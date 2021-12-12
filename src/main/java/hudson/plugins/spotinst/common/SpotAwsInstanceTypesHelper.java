@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by Liron Arad on 08/12/2021.
@@ -47,7 +48,6 @@ public class SpotAwsInstanceTypesHelper {
                     SpotinstContext.getInstance().setAwsInstanceTypes(awsInstanceTypes);
                 }
                 else {
-
                     if (SpotinstContext.getInstance().getAwsInstanceTypes() == null) {
                         awsInstanceTypes = getConstantInstanceTypesList();
                         String massage =
@@ -60,6 +60,7 @@ public class SpotAwsInstanceTypesHelper {
                 }
 
             }
+
             retVal = SpotinstContext.getInstance().getAwsInstanceTypes();
         }
         return retVal;

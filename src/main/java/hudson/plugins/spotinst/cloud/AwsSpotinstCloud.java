@@ -4,8 +4,8 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
-import hudson.plugins.spotinst.common.AwsInstanceTypeEnum;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
+import hudson.plugins.spotinst.common.SpotAwsInstanceTypesHelper;
 import hudson.plugins.spotinst.model.aws.*;
 import hudson.plugins.spotinst.repos.IAwsGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
@@ -183,14 +183,12 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     protected Integer getDefaultExecutorsNumber(String instanceType) {
         Integer retVal;
         LOGGER.info(String.format("Getting the # of default executors for instance type: %s", instanceType));
-        AwsInstanceTypeEnum enumMember = AwsInstanceTypeEnum.fromValue(instanceType);
+        Optional<AwsInstanceType> awsInstanceType = SpotAwsInstanceTypesHelper.getAllInstanceTypes().stream()
+                                                                              .filter(i -> i.getInstanceType()
+                                                                                            .equals(instanceType))
+                                                                              .findFirst();
 
-        if (enumMember != null) {
-            retVal = enumMember.getExecutors();
-        }
-        else {
-            retVal = null;
-        }
+        retVal = awsInstanceType.map(AwsInstanceType::getVCPU).orElse(null);
 
         return retVal;
     }
@@ -199,7 +197,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //region Private Methods
     @Override
     protected Integer getNumOfExecutors(String instanceType) {
-        //TODO - CR
+        //TODO - CR - Ask Shibel what wil happen if null value returned
         Integer retVal = null;
 
         if (instanceType != null) {
