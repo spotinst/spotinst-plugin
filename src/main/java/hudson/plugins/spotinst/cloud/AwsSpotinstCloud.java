@@ -197,7 +197,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //region Private Methods
     @Override
     protected Integer getNumOfExecutors(String instanceType) {
-        //TODO - CR - Ask Shibel what wil happen if null value returned
         Integer retVal = null;
 
         if (instanceType != null) {

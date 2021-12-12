@@ -43,6 +43,9 @@ public class SpotinstContext {
         this.accountId = accountId;
     }
 
+    /*
+    To get most up-to-date instance types DO NOT use this getter, instead use SpotAwsInstanceTypesHelper.getAllInstanceTypes().
+     */
     public List<AwsInstanceType> getAwsInstanceTypes() {
         return awsInstanceTypes;
     }
@@ -51,7 +54,7 @@ public class SpotinstContext {
         this.awsInstanceTypes = awsInstanceTypes;
     }
 
-    //TODO - consult about annotation with Ziv and Shibel
+    //TODO - approve annotation sage in CR
     @SuppressFBWarnings(value = {"EI_EXPOSE_REP"})
     public Date getAwsInstanceTypesLastUpdate() {
         return awsInstanceTypesLastUpdate;
