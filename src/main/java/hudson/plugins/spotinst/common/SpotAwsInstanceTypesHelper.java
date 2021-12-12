@@ -41,7 +41,7 @@ public class SpotAwsInstanceTypesHelper {
                     awsInstanceTypes = allInstanceTypesResponse.getValue();
                     Date now = new Date();
                     SpotinstContext.getInstance().setAwsInstanceTypesLastUpdate(now);
-                    String massage = "instance types loaded using API call.";
+                    String massage = "instance types loaded using API call";
 
                     LOGGER.info(massage);
                     SpotinstContext.getInstance().setAwsInstanceTypes(awsInstanceTypes);
