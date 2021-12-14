@@ -54,7 +54,6 @@ public class SpotinstContext {
         this.awsInstanceTypes = awsInstanceTypes;
     }
 
-    //TODO - approve annotation sage in CR
     @SuppressFBWarnings(value = {"EI_EXPOSE_REP"})
     public Date getAwsInstanceTypesLastUpdate() {
         return awsInstanceTypesLastUpdate;

@@ -23,7 +23,6 @@ import static hudson.plugins.spotinst.api.SpotinstApi.validateToken;
 public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeight> {
     //region Members
     private Integer             executors;
-    //TODO improve naming
     private String              awsInstanceTypeFromAPI;
     //Deprecated
     private AwsInstanceTypeEnum awsInstanceType;
@@ -107,9 +106,6 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
 
     public String getAwsInstanceTypeFromAPI() {
         String retVal;
-        String accountId = SpotinstContext.getInstance().getAccountId();
-        String token     = SpotinstContext.getInstance().getSpotinstToken();
-        int    isValid   = validateToken(token, accountId);
 
         if (this.awsInstanceTypeFromAPI != null) {
 
@@ -122,7 +118,7 @@ public class SpotinstInstanceWeight implements Describable<SpotinstInstanceWeigh
             List<AwsInstanceType> types = SpotAwsInstanceTypesHelper.getAllInstanceTypes();
             boolean isTypeInList = types.stream().anyMatch(i -> i.getInstanceType().equals(this.awsInstanceTypeFromAPI));
 
-            if (isTypeInList == false && isValid != 0) {
+            if (isTypeInList == false) {
                 AwsInstanceType instanceType = new AwsInstanceType();
                 instanceType.setInstanceType(awsInstanceTypeFromAPI);
                 instanceType.setvCPU(1);

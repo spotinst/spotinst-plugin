@@ -93,6 +93,7 @@ public class SpotAwsInstanceTypesHelper {
             else {
                 Date now               = new Date();
                 long differentInMinute = TimeUtils.getDiffInMinutes(now, awsInstanceTypesLastUpdate);
+
                 if (differentInMinute < AWS_INSTANCE_TYPES_UP_TO_DATE_THRESHOLD_IN_MINUTES) {
                     retVal = true;
                 }
