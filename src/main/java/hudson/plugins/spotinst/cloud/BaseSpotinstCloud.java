@@ -1,5 +1,6 @@
 package hudson.plugins.spotinst.cloud;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.DescriptorExtensionList;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
@@ -14,6 +15,7 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +47,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   ToolLocationNodeProperty          toolLocations;
     private   Boolean                           shouldUseWebsocket;
     private   Boolean                           shouldRetriggerBuilds;
+    private   Boolean                           isOneOffNodesEnabled =
+            DescriptorImpl.getIsOneOffNodesEnabledOneOfEnabledDescriptor();
     private   ComputerConnector                 computerConnector;
     private   ConnectionMethodEnum              connectionMethod;
     private   Boolean                           shouldUsePrivateIp;
@@ -588,24 +592,29 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         Integer globalOverrideExecutorsNumber = getExecutorsFromGlobalOverride();
 
-        if (globalOverrideExecutorsNumber != null) {
-            LOGGER.debug(String.format("Overriding executors for instance type %s to be %s", instanceType,
-                                       globalOverrideExecutorsNumber));
-            retVal = globalOverrideExecutorsNumber;
+        if (getIsOneOffNodesEnabled()) {
+            retVal = 1;
         }
         else {
-            Integer defaultNumberOfExecutors = getDefaultExecutorsNumber(instanceType);
-
-            if (defaultNumberOfExecutors != null) {
-                retVal = defaultNumberOfExecutors;
+            if (globalOverrideExecutorsNumber != null) {
+                LOGGER.debug(String.format("Overriding executors for instance type %s to be %s", instanceType,
+                                           globalOverrideExecutorsNumber));
+                retVal = globalOverrideExecutorsNumber;
             }
             else {
-                retVal = 1;
-                String warningMsg = String.format(
-                        "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s",
-                        instanceType, retVal, this.getGroupId());
-                LOGGER.warn(warningMsg);
+                Integer defaultNumberOfExecutors = getDefaultExecutorsNumber(instanceType);
 
+                if (defaultNumberOfExecutors != null) {
+                    retVal = defaultNumberOfExecutors;
+                }
+                else {
+                    retVal = 1;
+                    String warningMsg = String.format(
+                            "Failed to determine # of executors for instance type %s, defaulting to %s executor(s). Group ID: %s",
+                            instanceType, retVal, this.getGroupId());
+                    LOGGER.warn(warningMsg);
+
+                }
             }
         }
 
@@ -734,6 +743,29 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public void setGlobalExecutorOverride(SpotGlobalExecutorOverride globalExecutorOverride) {
         this.globalExecutorOverride = globalExecutorOverride;
     }
+
+
+    public Boolean getIsOneOffNodesEnabled() {
+        if (this.isOneOffNodesEnabled == null) {
+            return false;
+        }
+        else {
+            return isOneOffNodesEnabled;
+        }
+    }
+
+    @DataBoundSetter
+    public void setIsOneOffNodesEnabled(@CheckForNull Boolean isOneOffNodesEnabled) {
+        this.isOneOffNodesEnabled = isOneOffNodesEnabled;
+
+        // if enabled, enable and override GlobalExecutorOverride to 1
+        // better clarity to user, avoid race conditions
+        if (isOneOffNodesEnabled != null && isOneOffNodesEnabled) {
+            this.globalExecutorOverride = new SpotGlobalExecutorOverride(true, 1);
+        }
+    }
+
+
     //endregion
 
     //region Abstract Methods
@@ -764,6 +796,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         public List getComputerConnectorDescriptors() {
             return Jenkins.get().getDescriptorList(ComputerConnector.class).stream()
                           .filter(x -> x.isSubTypeOf(SSHConnector.class)).collect(Collectors.toList());
+        }
+
+        public static Boolean getIsOneOffNodesEnabledOneOfEnabledDescriptor() {
+            return false;
         }
     }
     //endregion

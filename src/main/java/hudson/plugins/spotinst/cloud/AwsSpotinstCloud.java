@@ -202,7 +202,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             initExecutorsByInstanceType();
         }
 
-        if (executorsByInstanceType.containsKey(instanceType)) {
+        if (executorsByInstanceType.containsKey(instanceType) && getIsOneOffNodesEnabled() == false) {
             retVal = executorsByInstanceType.get(instanceType);
             LOGGER.info(String.format("We have a weight definition for this type of %s", retVal));
         }
