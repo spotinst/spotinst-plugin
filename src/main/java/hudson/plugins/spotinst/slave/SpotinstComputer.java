@@ -36,7 +36,7 @@ public class SpotinstComputer extends SlaveComputer {
             BaseSpotinstCloud spotinstCloud = spotinstNode.getSpotinstCloud();
 
             if (spotinstCloud != null) {
-                if (spotinstCloud.getIsOneOffNodesEnabled()) {
+                if (spotinstCloud.getIsSingleTaskNodesEnabled()) {
                     String msg = String.format(
                             "Node %s has accepted a job and 'One Off Nodes' setting on Cloud %s is on. Node will not accept any more jobs.",
                             spotinstNode.getNodeName(), spotinstCloud.getDisplayName());
