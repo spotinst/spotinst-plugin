@@ -591,8 +591,9 @@ public abstract class BaseSpotinstCloud extends Cloud {
         Integer retVal;
 
         Integer globalOverrideExecutorsNumber = getExecutorsFromGlobalOverride();
+        boolean isOneOffNodesEnabled          = getIsOneOffNodesEnabled();
 
-        if (getIsOneOffNodesEnabled()) {
+        if (isOneOffNodesEnabled) {
             retVal = 1;
         }
         else {

@@ -46,7 +46,8 @@ public class SpotinstComputer extends SlaveComputer {
                     // should also be decided with UI because each combo looks different in the node list.
                     this.setTemporarilyOffline(true, new SpotinstOneOffOfflineCause(new SpotinstNonLocalizable(msg)));
                 }
-            } else {
+            }
+            else {
                 LOGGER.error(String.format(
                         "Node %s has accepted a job but can't determine 'One Off Nodes' setting because SpotinstNode's SpotinstCloud appears to be null.",
                         spotinstNode.getNodeName()));
