@@ -110,10 +110,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         else {
             this.globalExecutorOverride = new SpotGlobalExecutorOverride(false, 1);
         }
-
-//        this.isSingleTaskNodesEnabled =
-//                DescriptorImpl.getIsSingleTaskNodesEnabledOneOfEnabledDescriptor();
-
     }
     //endregion
 
