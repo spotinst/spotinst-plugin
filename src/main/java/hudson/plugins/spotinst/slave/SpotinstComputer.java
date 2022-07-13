@@ -38,23 +38,23 @@ public class SpotinstComputer extends SlaveComputer {
             if (spotinstCloud != null) {
                 if (spotinstCloud.getIsSingleTaskNodesEnabled()) {
                     String msg = String.format(
-                            "Node %s has accepted a job and 'One Off Nodes' setting on Cloud %s is on. Node will not accept any more jobs.",
+                            "Node %s has accepted a job and 'Single Task Nodes' setting on Cloud %s is on. Node will not accept any more jobs.",
                             spotinstNode.getNodeName(), spotinstCloud.getDisplayName());
                     LOGGER.info(msg);
                     this.setAcceptingTasks(false);
                     // I see much better responsiveness from Jenkins in case of setting offline, both have same effect
                     // should also be decided with UI because each combo looks different in the node list.
-                    this.setTemporarilyOffline(true, new SpotinstOneOffOfflineCause(new SpotinstNonLocalizable(msg)));
+                    this.setTemporarilyOffline(true, new SpotinstSingleTaskOfflineCause(new SpotinstNonLocalizable(msg)));
                 }
             }
             else {
                 LOGGER.error(String.format(
-                        "Node %s has accepted a job but can't determine 'One Off Nodes' setting because SpotinstNode's SpotinstCloud appears to be null.",
+                        "Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode's SpotinstCloud appears to be null.",
                         spotinstNode.getNodeName()));
             }
         } else {
             LOGGER.error(String.format(
-                    "Executor of Node %s has accepted a job but can't determine 'One Off Nodes' setting because SpotinstNode is null.", executor.getOwner().getName()));
+                    "Executor of Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode is null.", executor.getOwner().getName()));
         }
     }
 

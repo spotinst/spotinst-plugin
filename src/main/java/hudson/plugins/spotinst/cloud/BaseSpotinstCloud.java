@@ -32,29 +32,27 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
 
-    protected     String                            accountId;
-    protected     String                            groupId;
-    protected     Map<String, PendingInstance>      pendingInstances;
-    protected     Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
-    private       String                            labelString;
-    private       String                            idleTerminationMinutes;
-    private       String                            workspaceDir;
-    private       Set<LabelAtom>                    labelSet;
-    private       SlaveUsageEnum                    usage;
-    private       String                            tunnel;
-    private       String                            vmargs;
-    private       EnvironmentVariablesNodeProperty  environmentVariables;
-    private       ToolLocationNodeProperty          toolLocations;
-    private       Boolean                           shouldUseWebsocket;
-    private       Boolean                           shouldRetriggerBuilds;
-    private       Boolean                           isSingleTaskNodesEnabled;
-    //= DescriptorImpl.getIsSingleTaskNodesEnabledOneOfEnabledDescriptor();
-    private       ComputerConnector                 computerConnector;
-    private       ConnectionMethodEnum              connectionMethod;
-    private       Boolean                           shouldUsePrivateIp;
-    private       SpotGlobalExecutorOverride globalExecutorOverride;
-    protected Integer                        NO_OVERRIDED_NUM_OF_EXECUTORS = -1;
-
+    protected static final Integer                           NO_OVERRIDE_NUM_OF_EXECUTORS = -1;
+    protected              String                            accountId;
+    protected              String                            groupId;
+    protected              Map<String, PendingInstance>      pendingInstances;
+    protected              Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
+    private                String                            labelString;
+    private                String                            idleTerminationMinutes;
+    private                String                            workspaceDir;
+    private                Set<LabelAtom>                    labelSet;
+    private                SlaveUsageEnum                    usage;
+    private                String                            tunnel;
+    private                String                            vmargs;
+    private                EnvironmentVariablesNodeProperty  environmentVariables;
+    private                ToolLocationNodeProperty          toolLocations;
+    private                Boolean                           shouldUseWebsocket;
+    private                Boolean                           shouldRetriggerBuilds;
+    private                Boolean                           isSingleTaskNodesEnabled;
+    private                ComputerConnector                 computerConnector;
+    private                ConnectionMethodEnum              connectionMethod;
+    private                Boolean                           shouldUsePrivateIp;
+    private                SpotGlobalExecutorOverride        globalExecutorOverride;
     //endregion
 
     //region Constructor
@@ -602,7 +600,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         else {
             Integer numOfExecutorsOverride = getNumOfExecutorsOverride(instanceType);
             boolean isNumOfExecutorsOverrideIsEnabled =
-                    numOfExecutorsOverride.equals(NO_OVERRIDED_NUM_OF_EXECUTORS) == false;
+                    numOfExecutorsOverride.equals(NO_OVERRIDE_NUM_OF_EXECUTORS) == false;
 
             if(isNumOfExecutorsOverrideIsEnabled){
                 retVal = numOfExecutorsOverride;
@@ -640,7 +638,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     protected Integer getNumOfExecutorsOverride(String instanceType) {
-        return NO_OVERRIDED_NUM_OF_EXECUTORS;
+        return NO_OVERRIDE_NUM_OF_EXECUTORS;
     }
 
     protected Integer getPendingThreshold() {
@@ -817,10 +815,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
             return Jenkins.get().getDescriptorList(ComputerConnector.class).stream()
                           .filter(x -> x.isSubTypeOf(SSHConnector.class)).collect(Collectors.toList());
         }
-
-//        public static Boolean getIsSingleTaskNodesEnabledOneOfEnabledDescriptor() {
-//            return false;
-//        }
     }
     //endregion
 }
