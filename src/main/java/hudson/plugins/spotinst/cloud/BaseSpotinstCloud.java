@@ -32,7 +32,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
 
-    protected static final Integer                           NO_OVERRIDE_NUM_OF_EXECUTORS = -1;
+    protected static final int                               NO_OVERRIDED_NUM_OF_EXECUTORS = -1;
     protected              String                            accountId;
     protected              String                            groupId;
     protected              Map<String, PendingInstance>      pendingInstances;
@@ -594,12 +594,11 @@ public abstract class BaseSpotinstCloud extends Cloud {
             retVal = 1;
         }
         else {
-            Integer numOfExecutorsOverride = getNumOfExecutorsOverride(instanceType);
-            boolean isNumOfExecutorsOverrideIsEnabled =
-                    numOfExecutorsOverride.equals(NO_OVERRIDE_NUM_OF_EXECUTORS) == false;
+            int overridedNumOfExecutors = getOverridedNumberOfExecutors(instanceType);
+            boolean isNumOfExecutorsOverrided = overridedNumOfExecutors != NO_OVERRIDED_NUM_OF_EXECUTORS;
 
-            if(isNumOfExecutorsOverrideIsEnabled){
-                retVal = numOfExecutorsOverride;
+            if(isNumOfExecutorsOverrided){
+                retVal = overridedNumOfExecutors;
             }
             else {
                 Integer globalOverrideExecutorsNumber = getExecutorsFromGlobalOverride();
@@ -633,8 +632,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    protected Integer getNumOfExecutorsOverride(String instanceType) {
-        return NO_OVERRIDE_NUM_OF_EXECUTORS;
+    protected int getOverridedNumberOfExecutors(String instanceType) {
+        return NO_OVERRIDED_NUM_OF_EXECUTORS;
     }
 
     protected Integer getPendingThreshold() {
@@ -769,13 +768,14 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     @DataBoundSetter
-    public void setIsSingleTaskNodesEnabled(@CheckForNull Boolean isSingleTaskNodesEnabled) {
+    public void setIsSingleTaskNodesEnabled(Boolean isSingleTaskNodesEnabled) {
         this.isSingleTaskNodesEnabled = isSingleTaskNodesEnabled;
 
         // if enabled, enable and override GlobalExecutorOverride to 1
         // better clarity to user, avoid race conditions
-        if (isSingleTaskNodesEnabled != null && isSingleTaskNodesEnabled) {
-            this.globalExecutorOverride = new SpotGlobalExecutorOverride(true, 1);
+        boolean shouldDisableGlobalExecutors = isSingleTaskNodesEnabled != null && isSingleTaskNodesEnabled && this.globalExecutorOverride != null;
+        if (shouldDisableGlobalExecutors) {
+            this.globalExecutorOverride.setIsEnabled(false);
         }
     }
 

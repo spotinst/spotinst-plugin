@@ -9,14 +9,4 @@ class SpotinstNonLocalizable extends NonLocalizable {
     public SpotinstNonLocalizable(String nonLocalizable) {
         super(nonLocalizable);
     }
-
-    @Override
-    public String toString(Locale locale) {
-        return super.toString(locale);
-    }
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 }

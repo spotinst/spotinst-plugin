@@ -44,7 +44,9 @@ public class SpotinstComputer extends SlaveComputer {
                     this.setAcceptingTasks(false);
                     // I see much better responsiveness from Jenkins in case of setting offline, both have same effect
                     // should also be decided with UI because each combo looks different in the node list.
-                    this.setTemporarilyOffline(true, new SpotinstSingleTaskOfflineCause(new SpotinstNonLocalizable(msg)));
+                    SpotinstNonLocalizable spotinstNonLocalizable = new SpotinstNonLocalizable(msg);
+                    SpotinstSingleTaskOfflineCause spotinstSingleTaskOfflineCause = new SpotinstSingleTaskOfflineCause(spotinstNonLocalizable);
+                    this.setTemporarilyOffline(true,spotinstSingleTaskOfflineCause);
                 }
             }
             else {
