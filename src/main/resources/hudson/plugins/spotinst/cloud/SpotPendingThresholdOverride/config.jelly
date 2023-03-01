@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:optionalBlock checked="${it.isEnabled}" title="Override default pending minutes before termination" field="isEnabled" inline="true">
+        <f:entry title="Pending minutes before termination">
+            <f:number value="${it.pendingThreshold}" field="pendingThreshold"  clazz="required positive-number" min="1" checkMessage="Required field. You haven't specified a positive number - this setting will be ignored and overridden by the cloud's default value."/>
+        </f:entry>
+    </f:optionalBlock>
+</j:jelly>

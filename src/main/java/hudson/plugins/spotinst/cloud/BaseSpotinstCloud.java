@@ -1,6 +1,5 @@
 package hudson.plugins.spotinst.cloud;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.DescriptorExtensionList;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
@@ -53,6 +52,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private                ConnectionMethodEnum              connectionMethod;
     private                Boolean                           shouldUsePrivateIp;
     private                SpotGlobalExecutorOverride        globalExecutorOverride;
+    protected              SpotPendingThresholdOverride      pendingThresholdOverride;
     //endregion
 
     //region Constructor
@@ -62,7 +62,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              EnvironmentVariablesNodeProperty environmentVariables,
                              ToolLocationNodeProperty toolLocations, String accountId,
                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
-                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride) {
+                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
+                             SpotPendingThresholdOverride pendingThresholdOverride) {
 
         super(groupId);
         this.groupId = groupId;
@@ -109,6 +110,14 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
         else {
             this.globalExecutorOverride = new SpotGlobalExecutorOverride(false, 1);
+        }
+
+        if (pendingThresholdOverride != null) {
+            this.pendingThresholdOverride = pendingThresholdOverride;
+        }
+        else {
+            this.pendingThresholdOverride =
+                    new SpotPendingThresholdOverride(false, null);
         }
     }
     //endregion
@@ -594,10 +603,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
             retVal = 1;
         }
         else {
-            int overridedNumOfExecutors = getOverridedNumberOfExecutors(instanceType);
+            int     overridedNumOfExecutors   = getOverridedNumberOfExecutors(instanceType);
             boolean isNumOfExecutorsOverrided = overridedNumOfExecutors != NO_OVERRIDED_NUM_OF_EXECUTORS;
 
-            if(isNumOfExecutorsOverrided){
+            if (isNumOfExecutorsOverrided) {
                 retVal = overridedNumOfExecutors;
             }
             else {
@@ -637,7 +646,17 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     protected Integer getPendingThreshold() {
-        return Constants.PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+        Integer retVal = null;
+
+        if (pendingThresholdOverride.getIsEnabled()) {
+            retVal = pendingThresholdOverride.getPendingThreshold();
+        }
+
+        if (retVal == null) {
+            retVal = Constants.DEFAULT_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+        }
+
+        return retVal;
     }
 
     protected Integer getSlaveOfflineThreshold() {
@@ -773,7 +792,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         // if enabled, enable and override GlobalExecutorOverride to 1
         // better clarity to user, avoid race conditions
-        boolean shouldDisableGlobalExecutors = isSingleTaskNodesEnabled != null && isSingleTaskNodesEnabled && this.globalExecutorOverride != null;
+        boolean shouldDisableGlobalExecutors =
+                isSingleTaskNodesEnabled != null && isSingleTaskNodesEnabled && this.globalExecutorOverride != null;
         if (shouldDisableGlobalExecutors) {
             this.globalExecutorOverride.setIsEnabled(false);
         }

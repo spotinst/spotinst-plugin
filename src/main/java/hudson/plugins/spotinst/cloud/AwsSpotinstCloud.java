@@ -32,7 +32,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     private static final String                                 CLOUD_URL = "aws/ec2";
     protected            Map<String, Integer>                   executorsByInstanceType;
     private              List<? extends SpotinstInstanceWeight> executorsForTypes;
-    private List<String>                                        invalidInstanceTypes;
+    private              List<String>                           invalidInstanceTypes;
     //endregion
 
     //region Constructor
@@ -43,11 +43,12 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                             EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
-                            Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride) {
+                            Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
+                            SpotPendingThresholdOverride pendingThresholdOverride) {
 
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
-              computerConnector, shouldUsePrivateIp, globalExecutorOverride);
+              computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThresholdOverride);
 
         this.executorsForTypes = new LinkedList<>();
 
@@ -380,7 +381,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                     String  type      = instance.getAwsInstanceTypeFromAPIInput();
                     this.executorsByInstanceType.put(type, executors);
 
-                    if(instance.getIsValid() == false){
+                    if (instance.getIsValid() == false) {
                         LOGGER.error(String.format("Invalid type \'%s\' in group \'%s\'", type, this.getGroupId()));
                         invalidInstanceTypes.add(type);
                     }

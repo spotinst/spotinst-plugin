@@ -42,10 +42,11 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
                           Boolean shouldRetriggerBuilds, String vmargs,
                           EnvironmentVariablesNodeProperty environmentVariables, ToolLocationNodeProperty toolLocations,
                           String accountId, ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
-                          Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride) {
+                          Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
+                          SpotPendingThresholdOverride pendingThresholdOverride) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
-              computerConnector, shouldUsePrivateIp, globalExecutorOverride);
+              computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThresholdOverride);
     }
     //endregion
 
@@ -102,8 +103,18 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected Integer getPendingThreshold() {
-        return Constants.AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+    public Integer getPendingThreshold() {
+        Integer retVal = null;
+
+        if (pendingThresholdOverride.getIsEnabled()) {
+            retVal = pendingThresholdOverride.getPendingThreshold();
+        }
+
+        if (retVal == null) {
+            retVal = Constants.DEFAULT_AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+        }
+
+        return retVal;
     }
 
     @Override
@@ -193,7 +204,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     private SpotinstSlave handleNewVm(String vmName, String vmSize, String label) {
-        Integer         executors  = getNumOfExecutors(vmSize);
+        Integer executors = getNumOfExecutors(vmSize);
         addToPending(vmName, executors, PendingInstance.StatusEnum.PENDING, label);
         SpotinstSlave retVal = buildSpotinstSlave(vmName, vmSize, String.valueOf(executors));
         return retVal;
@@ -260,8 +271,8 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
         SpotinstSlave slave = null;
 
         if (vm.getVmName() != null) {
-            String          vmSize     = vm.getVmSize();
-            Integer         executors  = getNumOfExecutors(vmSize);
+            String  vmSize    = vm.getVmSize();
+            Integer executors = getNumOfExecutors(vmSize);
             slave = buildSpotinstSlave(vm.getVmName(), vmSize, String.valueOf(executors));
         }
 

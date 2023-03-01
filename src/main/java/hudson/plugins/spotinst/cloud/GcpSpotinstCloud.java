@@ -45,10 +45,11 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
                             EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
-                            Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride) {
+                            Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
+                            SpotPendingThresholdOverride pendingThresholdOverride) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
-              computerConnector, shouldUsePrivateIp, globalExecutorOverride);
+              computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThresholdOverride);
     }
     //endregion
 
@@ -195,7 +196,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     //region Private Methods
     private SpotinstSlave handleNewGcpInstance(String instanceName, String machineType, String label) {
         LOGGER.info(String.format("Setting the # of executors for instance type: %s", machineType));
-        Integer        executors  = getNumOfExecutors(machineType);
+        Integer executors = getNumOfExecutors(machineType);
         addToPending(instanceName, executors, PendingInstance.StatusEnum.INSTANCE_INITIATING, label);
         SpotinstSlave retVal = buildSpotinstSlave(instanceName, machineType, String.valueOf(executors));
 

@@ -41,10 +41,11 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
                               EnvironmentVariablesNodeProperty environmentVariables,
                               ToolLocationNodeProperty toolLocations, String accountId,
                               ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
-                              Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride) {
+                              Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
+                              SpotPendingThresholdOverride pendingThresholdOverride) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
-              computerConnector, shouldUsePrivateIp, globalExecutorOverride);
+              computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThresholdOverride);
     }
     //endregion
 
@@ -154,8 +155,18 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected Integer getPendingThreshold() {
-        return Constants.AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+    public Integer getPendingThreshold() {//TODO: never called! monitorInstances doesn't go here
+        Integer retVal = null;
+
+        if (pendingThresholdOverride.getIsEnabled()) {
+            retVal = pendingThresholdOverride.getPendingThreshold();
+        }
+
+        if (retVal == null) {
+            retVal = Constants.DEFAULT_AZURE_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+        }
+
+        return retVal;
     }
 
     @Override
@@ -279,9 +290,9 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         SpotinstSlave slave = null;
 
         if (instance.getInstanceId() != null) {
-            String                vmSize     = instance.getVmSize();
+            String vmSize = instance.getVmSize();
             LOGGER.info(String.format("Setting the # of executors for instance type: %s", vmSize));
-            Integer               executors  = getNumOfExecutors(vmSize);
+            Integer executors = getNumOfExecutors(vmSize);
             slave = buildSpotinstSlave(instance.getInstanceId(), vmSize, String.valueOf(executors));
         }
 
