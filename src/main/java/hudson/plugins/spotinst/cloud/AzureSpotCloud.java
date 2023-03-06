@@ -23,6 +23,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,7 +119,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void syncGroupInstances() {
+    protected void internalSyncGroupInstances() {
         IAzureVmGroupRepo               azureVmGroupRepo  = RepoManager.getInstance().getAzureVmGroupRepo();
         ApiResponse<List<AzureGroupVm>> instancesResponse = azureVmGroupRepo.getGroupVms(groupId, this.accountId);
 
@@ -150,7 +151,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
         Map<String, String> retVal = new HashMap<>();
 
         IAzureVmGroupRepo               awsGroupRepo      = RepoManager.getInstance().getAzureVmGroupRepo();
-        ApiResponse<List<AzureGroupVm>> instancesResponse = awsGroupRepo.getGroupVms(groupId, this.accountId);
+        ApiResponse<List<AzureGroupVm>> instancesResponse = awsGroupRepo.getGroupVms(groupId, accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<AzureGroupVm> instances = instancesResponse.getValue();
@@ -303,6 +304,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {
 
+        @Nonnull
         @Override
         public String getDisplayName() {
             return "Spot Azure Elastigroup";

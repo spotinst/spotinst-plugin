@@ -21,6 +21,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
 
@@ -51,6 +52,11 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
 
     //region Overrides
     @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();//Jenkins.get().getDescriptorOrDie(this.getClass());
+    }
+
+    @Override
     List<SpotinstSlave> scaleUp(ProvisionRequest request) {
         List<SpotinstSlave> retVal = new LinkedList<>();
 
@@ -71,10 +77,9 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     public Boolean detachInstance(String instanceId) {
-        Boolean         retVal         = false;
-        IAzureGroupRepo azureGroupRepo = RepoManager.getInstance().getAzureGroupRepo();
-        ApiResponse<Boolean> detachInstanceResponse =
-                azureGroupRepo.detachInstance(groupId, instanceId, this.accountId);
+        Boolean              retVal                 = false;
+        IAzureGroupRepo      azureGroupRepo         = RepoManager.getInstance().getAzureGroupRepo();
+        ApiResponse<Boolean> detachInstanceResponse = azureGroupRepo.detachInstance(groupId, instanceId, accountId);
 
         if (detachInstanceResponse.isRequestSucceed()) {
             LOGGER.info(String.format("Instance %s detached", instanceId));
@@ -94,6 +99,11 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
+    protected void internalSyncGroupInstances() {
+
+    }
+
+    @Override
     public Map<String, String> getInstanceIpsById() {
         Map<String, String> retVal = new HashMap<>();
 
@@ -105,7 +115,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
             List<AzureGroupInstance> instances = instancesResponse.getValue();
 
             for (AzureGroupInstance instance : instances) {
-                if (this.getShouldUsePrivateIp()) {
+                if (getShouldUsePrivateIp()) {
                     retVal.put(instance.getInstanceId(), instance.getPrivateIp());
                 }
                 else {
@@ -123,8 +133,8 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void monitorInstances() {
-        IAzureGroupRepo azureGroupRepo = RepoManager.getInstance().getAzureGroupRepo();
+    protected void internalMonitorInstances() {
+        IAzureGroupRepo                       azureGroupRepo    = RepoManager.getInstance().getAzureGroupRepo();
         ApiResponse<List<AzureGroupInstance>> instancesResponse =
                 azureGroupRepo.getGroupInstances(groupId, this.accountId);
 
@@ -144,14 +154,16 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
 
             removeOldSlaveInstances(instances);
+
             addNewSlaveInstances(instances);
+
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
                                        instancesResponse.getErrors()));
         }
 
-        super.monitorInstances();
+        super.internalMonitorInstances();
     }
 
     @Override
@@ -170,8 +182,17 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void onInstanceReady(String instanceId) {
-        removeFromPending();
+    public Boolean onInstanceReady(String instanceId) {
+        Boolean retVal = isCloudReadyForGroupCommunication();
+
+        if (retVal) {
+            removeFromPending();
+        }
+        else {
+            LOGGER.error(SKIPPED_METHOD_GROUP_IS_NIT_READY_ERROR_LOGGER_FORMAT, "onInstanceReady", groupId);
+        }
+
+        return retVal;
     }
 
     @Override
@@ -333,6 +354,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {
 
+        @Nonnull
         @Override
         public String getDisplayName() {
             return "Spot Azure LPVM (old)";

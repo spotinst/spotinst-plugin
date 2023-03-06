@@ -22,6 +22,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -116,7 +117,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void syncGroupInstances() {
+    protected void internalSyncGroupInstances() {
         IGcpGroupRepo                       gcpGroupRepo      = RepoManager.getInstance().getGcpGroupRepo();
         ApiResponse<List<GcpGroupInstance>> instancesResponse = gcpGroupRepo.getGroupInstances(groupId, this.accountId);
 
@@ -149,7 +150,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
         Map<String, String> retVal = new HashMap<>();
 
         IGcpGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getGcpGroupRepo();
-        ApiResponse<List<GcpGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+        ApiResponse<List<GcpGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<GcpGroupInstance> instances = instancesResponse.getValue();
@@ -291,6 +292,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {
 
+        @Nonnull
         @Override
         public String getDisplayName() {
             return "Spot GCP Elastigroup";

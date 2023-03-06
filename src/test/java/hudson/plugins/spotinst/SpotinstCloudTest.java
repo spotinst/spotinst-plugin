@@ -32,7 +32,6 @@ import static org.junit.Assert.*;
  * Created by ohadmuchnik on 19/03/2017.
  */
 public class SpotinstCloudTest {
-
     @Rule
     public JenkinsRule jenkinsRule = new JenkinsRule();
 
@@ -48,8 +47,29 @@ public class SpotinstCloudTest {
         RepoManager.getInstance().setAzureGroupRepo(azureGroupRepo);
         RepoManager.getInstance().setAzureVmGroupRepo(azureVmGroupRepo);
 
+        setUpLockRepo();
+
         SpotinstContext.getInstance().setSpotinstToken("TOKEN");
 
+    }
+
+    private void setUpLockRepo() {
+        ILockRepo lockRepo = Mockito.mock(ILockRepo.class);
+
+        Mockito.when(lockRepo.acquireGroupControllerLock(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+                                                         Mockito.anyInt())).thenReturn(new ApiResponse<>("OK"));
+
+        Mockito.when(
+                lockRepo.setGroupControllerLockExpiry(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+                                                      Mockito.anyInt())).thenReturn(new ApiResponse<>("OK"));
+
+        Mockito.when(lockRepo.getGroupControllerLockValue(Mockito.anyString(), Mockito.anyString()))
+               .thenReturn(new ApiResponse<>(GroupLockingManager.getCurrentControllerIdentifier()));
+
+        Mockito.when(lockRepo.deleteGroupControllerLock(Mockito.anyString(), Mockito.anyString()))
+               .thenReturn(new ApiResponse<>(1));
+
+        RepoManager.getInstance().setLockRepo(lockRepo);
     }
 
     private PendingInstance buildPendingInstance(String id, PendingInstance.StatusEnum status, Integer executors) {
@@ -79,10 +99,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAwsProvision_whenThereArePendingInsatcnesForPartOfTheExecutors_thenShouldSacleUpTheRest() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         AwsSpotinstCloud spotinstCloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false, true, "", null,
-                                     null, null, null, null, null, null, null);
+                                     null, accountId, null, null, null, null, null);
 
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
@@ -146,9 +167,10 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAwsCloud_whenSshConnectionMethod_andIpIsAvailable_thenCreateSshLauncher() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotCloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, null, null);
         jenkinsRule.jenkins.clouds.add(spotCloud);
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH);
@@ -191,9 +213,10 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAwsCloud_whenSshConnectionMethod_andIpIsNotAvailable_thenDoNotConnectYet() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotCloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, null, null);
         jenkinsRule.jenkins.clouds.add(spotCloud);
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.SSH);
@@ -286,10 +309,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testGcpProvision_whenThereArePendingInsatcnesForPartOfTheExecutors_thenShouldSacleUpTheRest() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         GcpSpotinstCloud spotinstCloud =
-                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
-                                     null, null, null);
+                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, accountId, null,
+                                     null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sin-1", buildPendingInstance("sin-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -335,10 +359,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAzureProvision_whenThereArePendingInsatcnesForPartOfTheExecutors_thenShouldSacleUpTheRest() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         AzureSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null, null,
-                                       null, null, null, null);
+                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, accountId,
+                                       null, null, null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("asda", buildPendingInstance(groupId, PendingInstance.StatusEnum.PENDING, 1));
         pendingInstances.put("ada", buildPendingInstance(groupId, PendingInstance.StatusEnum.PENDING, 1));
@@ -379,10 +404,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAzureV3Provision_whenThereArePendingInstancesForPartOfTheExecutors_thenShouldScaleUpTheRest() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
-                                   null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, accountId, null,
+                                   null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -413,10 +439,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAzureV3Provision_whenUnrecognizedVmSize_thenDefaultTo1Executor() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
-                                   null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, accountId, null,
+                                   null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         AzureScaleUpResultNewVm newSpot = new AzureScaleUpResultNewVm();
         newSpot.setVmName("vm-2");
@@ -438,10 +465,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAzureV3Provision_whenNewInstancesAreLaunched_thenTheirSizeIsAccountedForInNodes() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
-                                   null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, accountId, null,
+                                   null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         AzureVmSizeEnum vmSizeBasicA1 = AzureVmSizeEnum.BASIC_A1;
         AzureVmSizeEnum vmSizeBasicA2 = AzureVmSizeEnum.BASIC_A2;
@@ -474,10 +502,11 @@ public class SpotinstCloudTest {
 
     @Test
     public void testAzureV3Provision_whenNewInstancesAreLaunched_thenTheirSizeIsAccountedForInPendingInstances() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, null, null, null,
-                                   null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, true, "", null, null, accountId, null,
+                                   null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", PendingInstance.StatusEnum.PENDING, 2));
@@ -505,7 +534,8 @@ public class SpotinstCloudTest {
         spotinstCloud.provision(null, 3);
         spotinstCloud.provision(null, 2);
 
-        Mockito.verify(RepoManager.getInstance().getAzureVmGroupRepo(), Mockito.times(1)).scaleUp(groupId, 1, null);
+        Mockito.verify(RepoManager.getInstance().getAzureVmGroupRepo(), Mockito.times(1))
+               .scaleUp(groupId, 1, accountId);
     }
     //endregion
 
@@ -564,9 +594,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsEnabledAndInstanceTypeIsMatchedInEnum_thenShouldUseGlobalOverrideValue() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, 23);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -603,9 +634,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsEnabledAndInstanceTypeIsNotMatchedInEnum_thenShouldUseGlobalOverrideValue() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, 23);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -642,6 +674,7 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsEnabledAndInstanceTypeIsInInstanceTypeWeights_thenShouldUseTypeWeight() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, 23);
 
         int expectedExecutors = 90;
@@ -650,8 +683,8 @@ public class SpotinstCloudTest {
 
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", executorForTypes, null, "", true, null, null, null,
-                                     null, null, ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride,
-                                     null);
+                                     null, accountId, ConnectionMethodEnum.SSH, getSSHConnector(), false,
+                                     globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
         AwsScaleResultNewSpot newSpot = new AwsScaleResultNewSpot();
@@ -689,9 +722,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsDisabledAndInstanceTypeIsNotMatchedInEnum_thenShouldUse1() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(false, 23);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -728,9 +762,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsDisabledAndInstanceTypeIsMatchedInEnum_thenShouldUseEnumValue() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(false, 23);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -766,7 +801,8 @@ public class SpotinstCloudTest {
 
     @Test
     public void testGlobalExecutorOverride_whenIsDisabledAndInstanceTypeIsInInstanceTypeWeights_thenShouldUseTypeWeight() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
 
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(false, 23);
 
@@ -776,8 +812,8 @@ public class SpotinstCloudTest {
 
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", executorForTypes, null, "", true, null, null, null,
-                                     null, null, ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride,
-                                     null);
+                                     null, accountId, ConnectionMethodEnum.SSH, getSSHConnector(), false,
+                                     globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
         AwsScaleResultNewSpot newSpot = new AwsScaleResultNewSpot();
@@ -814,9 +850,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsInvalidNegativeAndInstanceTypeIsMatchedInEnum_thenShouldUseEnumValue() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, -23);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -853,9 +890,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsInvalidNegativeAndInstanceTypeIsNotMatchedInEnum_thenShouldUse1() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, -23);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -891,7 +929,8 @@ public class SpotinstCloudTest {
 
     @Test
     public void testGlobalExecutorOverride_whenIsInvalidNegativeAndInstanceTypeIsInInstanceTypeWeights_thenShouldUseTypeWeight() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
 
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(false, -23);
 
@@ -901,8 +940,8 @@ public class SpotinstCloudTest {
 
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", executorForTypes, null, "", true, null, null, null,
-                                     null, null, ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride,
-                                     null);
+                                     null, accountId, ConnectionMethodEnum.SSH, getSSHConnector(), false,
+                                     globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
         AwsScaleResultNewSpot newSpot = new AwsScaleResultNewSpot();
@@ -938,9 +977,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsInvalidNullAndInstanceTypeIsMatchedInEnum_thenShouldUseEnumValue() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, null);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -977,9 +1017,10 @@ public class SpotinstCloudTest {
     @Test
     public void testGlobalExecutorOverride_whenIsInvalidNullAndInstanceTypeIsNotMatchedInEnum_thenShouldUse1() {
         String                     groupId        = "sig-1";
+        String                     accountId      = "act-111";
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(true, null);
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -1015,7 +1056,8 @@ public class SpotinstCloudTest {
 
     @Test
     public void testGlobalExecutorOverride_whenIsInvalidNullAndInstanceTypeIsInInstanceTypeWeights_thenShouldUseTypeWeight() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
 
         SpotGlobalExecutorOverride globalOverride = new SpotGlobalExecutorOverride(false, null);
 
@@ -1025,8 +1067,8 @@ public class SpotinstCloudTest {
 
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", executorForTypes, null, "", true, null, null, null,
-                                     null, null, ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride,
-                                     null);
+                                     null, accountId, ConnectionMethodEnum.SSH, getSSHConnector(), false,
+                                     globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
         AwsScaleResultNewSpot newSpot = new AwsScaleResultNewSpot();
@@ -1063,9 +1105,10 @@ public class SpotinstCloudTest {
     //      null
     @Test
     public void testGlobalExecutorOverride_whenIsNullAndInstanceTypeIsMatchedInEnum_thenShouldUseEnumValue() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, null, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -1101,9 +1144,10 @@ public class SpotinstCloudTest {
 
     @Test
     public void testGlobalExecutorOverride_whenIsNullAndInstanceTypeIsNotMatchedInEnum_thenShouldUse1() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, null, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -1139,7 +1183,8 @@ public class SpotinstCloudTest {
 
     @Test
     public void testGlobalExecutorOverride_whenIsNullAndInstanceTypeIsInInstanceTypeWeights_thenShouldUseTypeWeight() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
 
         SpotGlobalExecutorOverride globalOverride = null;
 
@@ -1149,8 +1194,8 @@ public class SpotinstCloudTest {
 
         BaseSpotinstCloud cloud =
                 new AwsSpotinstCloud(groupId, "", "20", "/tmp", executorForTypes, null, "", true, null, null, null,
-                                     null, null, ConnectionMethodEnum.SSH, getSSHConnector(), false, globalOverride,
-                                     null);
+                                     null, accountId, ConnectionMethodEnum.SSH, getSSHConnector(), false,
+                                     globalOverride, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
         AwsScaleResultNewSpot newSpot = new AwsScaleResultNewSpot();
@@ -1188,9 +1233,10 @@ public class SpotinstCloudTest {
     //region "SpotinstSlave"
     @Test
     public void testSpotinstSlaveTermination_ifAgentInPendingInstances_thenAgentIsRemovedFromPendingInstances() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud cloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, null,
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, null, "", true, null, null, null, null, accountId,
                                      ConnectionMethodEnum.SSH, getSSHConnector(), false, null, null);
 
         jenkinsRule.jenkins.clouds.add(cloud);
@@ -1242,10 +1288,11 @@ public class SpotinstCloudTest {
      */
     @Test
     public void testAzureSpotinstCloud_DescriptorReturnsAzureSpotinstCloudString() {
-        String groupId = "sig-1";
+        String groupId   = "sig-1";
+        String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, null, null,
-                                       null, null, null, null);
+                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, false, "", null, null, accountId,
+                                       null, null, null, null, null);
 
         assertTrue(spotinstCloud.getDescriptor().toString().contains("AzureSpotinstCloud"));
     }

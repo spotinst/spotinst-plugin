@@ -18,6 +18,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
 
@@ -118,7 +119,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void syncGroupInstances() {
+    protected void internalSyncGroupInstances() {
         IAwsGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAwsGroupRepo();
         ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
 
@@ -137,8 +138,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
             addNewSlaveInstances(instances);
             removeOldSlaveInstances(instances);
-
-
         }
         else {
             LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
@@ -146,12 +145,12 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         }
     }
 
+
     @Override
     public Map<String, String> getInstanceIpsById() {
-        Map<String, String> retVal = new HashMap<>();
-
-        IAwsGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAwsGroupRepo();
-        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+        Map<String, String> retVal       = new HashMap<>();
+        IAwsGroupRepo       awsGroupRepo = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
@@ -197,7 +196,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     //region Private Methods
     @Override
-    protected int getOverridedNumberOfExecutors(String instanceType) {
+    protected int getOverriddenNumberOfExecutors(String instanceType) {
         Integer retVal;
 
         if (executorsByInstanceType == null) {
@@ -209,7 +208,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             LOGGER.info(String.format("We have a weight definition for this type of %s", retVal));
         }
         else {
-            retVal = NO_OVERRIDED_NUM_OF_EXECUTORS;
+            retVal = NO_OVERRIDDEN_NUM_OF_EXECUTORS;
         }
 
         return retVal;
@@ -405,6 +404,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     @Extension
     public static class DescriptorImpl extends BaseSpotinstCloud.DescriptorImpl {
 
+        @Nonnull
         @Override
         public String getDisplayName() {
             return "Spot AWS Elastigroup";
