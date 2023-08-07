@@ -76,9 +76,19 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
+    protected String getStatefulInstanceId(String instanceId) {
+        return null;//TODO: implement
+    }
+
+    @Override
+    public Boolean deallocateInstance(String instanceId){
+        return false;//TODO: implement
+    }
+
+    @Override
     public Boolean detachInstance(String instanceId) {
-        Boolean              retVal                 = false;
-        IAzureGroupRepo      azureGroupRepo         = RepoManager.getInstance().getAzureGroupRepo();
+        boolean         retVal         = false;
+        IAzureGroupRepo azureGroupRepo = RepoManager.getInstance().getAzureGroupRepo();
         ApiResponse<Boolean> detachInstanceResponse = azureGroupRepo.detachInstance(groupId, instanceId, accountId);
 
         if (detachInstanceResponse.isRequestSucceed()) {
@@ -281,7 +291,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     private Boolean isSlaveExistForInstance(AzureGroupInstance instance) {
-        Boolean retVal = false;
+        boolean retVal = false;
 
         Node node = Jenkins.getInstance().getNode(instance.getInstanceId());
 

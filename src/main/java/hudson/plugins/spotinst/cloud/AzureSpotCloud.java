@@ -86,9 +86,19 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
+    protected String getStatefulInstanceId(String instanceId) {
+        return null;//TODO: implement
+    }
+
+    @Override
+    public Boolean deallocateInstance(String instanceId) {
+        return false;//TODO: implement
+    }
+
+    @Override
     public Boolean detachInstance(String instanceId) {
-        Boolean              retVal           = false;
-        IAzureVmGroupRepo    azureVmGroupRepo = RepoManager.getInstance().getAzureVmGroupRepo();
+        boolean           retVal           = false;
+        IAzureVmGroupRepo azureVmGroupRepo = RepoManager.getInstance().getAzureVmGroupRepo();
         ApiResponse<Boolean> detachVmResponse = azureVmGroupRepo.detachVM(groupId, instanceId, this.accountId);
 
         if (detachVmResponse.isRequestSucceed()) {
@@ -212,7 +222,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
             for (SpotinstSlave slave : allGroupsSlaves) {
                 String slaveInstanceId = slave.getInstanceId();
 
-                Boolean slaveIdNotNull  = slaveInstanceId != null;
+                boolean slaveIdNotNull  = slaveInstanceId != null;
                 Boolean slaveExistsInEg = elastigroupVmIds.contains(slaveInstanceId);
 
                 if (slaveIdNotNull && BooleanUtils.isFalse(slaveExistsInEg)) {
@@ -241,7 +251,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
         if (azureGroupVms.size() > 0) {
 
             for (AzureGroupVm vm : azureGroupVms) {
-                Boolean doesSlaveNotExist = BooleanUtils.isFalse(isSlaveExistForInstance(vm));
+                boolean doesSlaveNotExist = BooleanUtils.isFalse(isSlaveExistForInstance(vm));
 
                 if (doesSlaveNotExist) {
                     LOGGER.info(String.format("Instance: %s of group: %s doesn't have slave , adding new one",
@@ -279,7 +289,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
 
 
     private Boolean isSlaveExistForInstance(AzureGroupVm vm) {
-        Boolean retVal = false;
+        boolean retVal = false;
         Node    node   = Jenkins.get().getNode(vm.getVmName());
 
         if (node != null) {

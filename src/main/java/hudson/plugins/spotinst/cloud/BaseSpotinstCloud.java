@@ -356,10 +356,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SlaveComputer computer = slave.getComputer();
         if (computer != null) {
             Integer offlineThreshold  = getSlaveOfflineThreshold();
-            Boolean isSlaveConnecting = computer.isConnecting();
-            Boolean isSlaveOffline    = computer.isOffline();
+            boolean isSlaveConnecting = computer.isConnecting();
+            boolean isSlaveOffline    = computer.isOffline();
             // the computer is actively marked as temporary offline
-            Boolean temporarilyOffline = computer.isTemporarilyOffline();
+            boolean temporarilyOffline = computer.isTemporarilyOffline();
             long    idleStartMillis    = computer.getIdleStartMilliseconds();
 
             long idleInMillis  = System.currentTimeMillis() - idleStartMillis;
@@ -519,7 +519,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     private ComputerLauncher buildLauncherForAgent(String instanceId) throws IOException {
         ComputerLauncher     retVal;
-        Boolean              isSshCloud          = this.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
+        boolean              isSshCloud          = this.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
         SlaveInstanceDetails instanceDetailsById = getSlaveDetails(instanceId);
 
         if (isSshCloud) {
@@ -633,7 +633,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     protected Integer getNumOfExecutors(String instanceType) {
-        Integer retVal;
+        int     retVal;
         boolean isSingleTaskNodesEnabled = getIsSingleTaskNodesEnabled();
 
         if (isSingleTaskNodesEnabled) {
@@ -853,7 +853,26 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Abstract Methods
     abstract List<SpotinstSlave> scaleUp(ProvisionRequest request);
 
-    public abstract Boolean detachInstance(String instanceId);
+    public Boolean removeInstance(String instanceId) {
+        boolean retVal;
+        String  statefulInstanceId = getStatefulInstanceId(instanceId);
+        boolean isStateful = statefulInstanceId != null;
+
+        if (isStateful) {
+            retVal = deallocateInstance(statefulInstanceId);
+        }
+        else {
+            retVal = detachInstance(instanceId);
+        }
+
+        return retVal;
+    }
+
+    protected abstract String getStatefulInstanceId(String instanceId);
+
+    protected abstract Boolean detachInstance(String instanceId);
+
+    protected abstract Boolean deallocateInstance(String instanceId);
 
     public abstract String getCloudUrl();
 

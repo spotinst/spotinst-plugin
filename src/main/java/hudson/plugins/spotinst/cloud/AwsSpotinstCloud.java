@@ -14,6 +14,7 @@ import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
+import org.apache.commons.collections.CollectionUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,8 +101,56 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
+    protected String getStatefulInstanceId(String instanceId) {
+        String retVal = null;
+
+        IAwsGroupRepo awsGroupRepo = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<List<AwsStatefulInstance>> statefulInstancesResponse =
+                awsGroupRepo.getStatefulInstances(groupId, accountId);
+
+        if (statefulInstancesResponse.isRequestSucceed()) {
+            List<AwsStatefulInstance> groupStatefulInstances      = statefulInstancesResponse.getValue();
+            boolean                   isGroupHasStatefulInstances = CollectionUtils.isNotEmpty(groupStatefulInstances);
+
+            if (isGroupHasStatefulInstances) {
+                Optional<AwsStatefulInstance> optionalAwsStatefulInstance = groupStatefulInstances.stream()
+                                                                                                  .filter(statefulInstance -> instanceId.equals(
+                                                                                                          statefulInstance.getInstanceId()))
+                                                                                                  .findFirst();
+                boolean isStatefulInstance = optionalAwsStatefulInstance.isPresent();
+
+                if (isStatefulInstance) {
+                    retVal = optionalAwsStatefulInstance.get().getId();
+                }
+            }
+        }
+
+        return retVal;
+    }
+
+    @Override
+    public Boolean deallocateInstance(String statefulInstanceId) {
+        boolean retVal = false;
+
+        IAwsGroupRepo awsGroupRepo = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<Boolean> detachInstanceResponse =
+                awsGroupRepo.deallocateInstance(groupId, statefulInstanceId, accountId);
+
+        if (detachInstanceResponse.isRequestSucceed()) {
+            LOGGER.info(String.format("Stateful Instance %s deallocated", statefulInstanceId));
+            retVal = true;
+        }
+        else {
+            LOGGER.error(String.format("Failed to deallocate instance %s. Errors: %s", statefulInstanceId,
+                                       detachInstanceResponse.getErrors()));
+        }
+
+        return retVal;
+    }
+
+    @Override
     public Boolean detachInstance(String instanceId) {
-        Boolean retVal = false;
+        boolean retVal = false;
 
         IAwsGroupRepo        awsGroupRepo           = RepoManager.getInstance().getAwsGroupRepo();
         ApiResponse<Boolean> detachInstanceResponse = awsGroupRepo.detachInstance(instanceId, this.accountId);
@@ -326,7 +375,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     private Boolean isSlaveExistForInstance(AwsGroupInstance instance) {
-        Boolean retVal = false;
+        boolean retVal = false;
         Node    node;
 
         String instanceId = instance.getInstanceId();
@@ -381,7 +430,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                     this.executorsByInstanceType.put(type, executors);
 
                     if (instance.getIsValid() == false) {
-                        LOGGER.error(String.format("Invalid type \'%s\' in group \'%s\'", type, this.getGroupId()));
+                        LOGGER.error(String.format("Invalid type '%s' in group '%s'", type, this.getGroupId()));
                         invalidInstanceTypes.add(type);
                     }
                 }

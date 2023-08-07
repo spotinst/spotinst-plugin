@@ -99,9 +99,19 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
+    protected String getStatefulInstanceId(String instanceId) {
+        return null;//TODO: implement
+    }
+
+    @Override
+    public Boolean deallocateInstance(String instanceId){
+        return false;//TODO: implement
+    }
+
+    @Override
     public Boolean detachInstance(String instanceId) {
-        Boolean              retVal                 = false;
-        IGcpGroupRepo        gcpGroupRepo           = RepoManager.getInstance().getGcpGroupRepo();
+        boolean       retVal       = false;
+        IGcpGroupRepo gcpGroupRepo = RepoManager.getInstance().getGcpGroupRepo();
         ApiResponse<Boolean> detachInstanceResponse = gcpGroupRepo.detachInstance(groupId, instanceId, this.accountId);
 
         if (detachInstanceResponse.isRequestSucceed()) {
@@ -263,7 +273,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     private Boolean isSlaveExistForGcpInstance(GcpGroupInstance instance) {
-        Boolean retVal = false;
+        boolean retVal = false;
 
         Node node = Jenkins.getInstance().getNode(instance.getInstanceName());
 
