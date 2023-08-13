@@ -169,14 +169,30 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     protected void internalSyncGroupInstances() {
-        IAwsGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAwsGroupRepo();
-        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
+        IAwsGroupRepo                          awsGroupRepo              = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<List<AwsGroupInstance>>    instancesResponse         =
+                awsGroupRepo.getGroupInstances(groupId, this.accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<AwsGroupInstance> instances = instancesResponse.getValue();
             LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
 
             Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
+
+            List<AwsStatefulInstance> statefulInstances;
+            ApiResponse<List<AwsStatefulInstance>> statefulInstancesResponse =
+                    awsGroupRepo.getStatefulInstances(groupId, this.accountId);
+
+            if(statefulInstancesResponse.isRequestSucceed()){
+                statefulInstances = statefulInstancesResponse.getValue();
+            }
+            else{
+                statefulInstances = new LinkedList<>();
+            }
+
+            Map<String, AwsStatefulInstance> ssiByInstanceId = new HashMap<>();
+            statefulInstances.forEach(ssi -> ssiByInstanceId.put(ssi.getInstanceId(), ssi));
+            this.ssiByInstanceId = ssiByInstanceId;
 
             for (AwsGroupInstance instance : instances) {
                 SlaveInstanceDetails instanceDetails = SlaveInstanceDetails.build(instance);

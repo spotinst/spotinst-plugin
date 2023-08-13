@@ -5,6 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
+import hudson.plugins.spotinst.model.aws.AwsStatefulInstance;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
@@ -40,6 +41,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     protected String                            groupId;
     protected Map<String, PendingInstance>      pendingInstances;
     protected Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
+    protected Map<String, AwsStatefulInstance>  ssiByInstanceId;
     private   String                            labelString;
     private   String                            idleTerminationMinutes;
     private   String                            workspaceDir;
@@ -856,7 +858,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public Boolean removeInstance(String instanceId) {
         boolean retVal;
         String  statefulInstanceId = getStatefulInstanceId(instanceId);
-        boolean isStateful = statefulInstanceId != null;
+        boolean isStateful         = statefulInstanceId != null;
 
         if (isStateful) {
             retVal = deallocateInstance(statefulInstanceId);
