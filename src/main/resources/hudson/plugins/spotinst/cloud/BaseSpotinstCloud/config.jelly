@@ -1,5 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:c="/lib/credentials">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
     <f:entry>
         <img style="height:32px;"
              src="https://spotinst-public.s3.amazonaws.com/assets/emails/welcome-email/spot_large.png"/>
@@ -25,7 +25,7 @@
     <f:entry title="${%Remote root directory}" field="workspaceDir" description='For SSH clouds, root directory must be specified and must exist on the agent in order for it to connect. For JNLP clouds the default may vary. Using an absolute path is recommended.'>
         <f:textbox/>
     </f:entry>
-    <f:block><span style="display: block; margin-bottom: 1em;"></span></f:block>
+    <f:block><span style="display: block; margin-bottom: 1em;"/></f:block>
     <f:entry title="Usage" field="usage">
         <f:enum>${it.name()}</f:enum>
     </f:entry>
@@ -64,14 +64,8 @@
 
 
 
-    <f:entry><span style="display:block; margin-bottom: 0.5em;"></span></f:entry>
-
-
-
-
-    <f:entry title="${%Retrigger Builds on Node Interruption}" field="shouldRetriggerBuilds">
-      <f:checkbox checked="${instance == null || instance.shouldRetriggerBuilds == null || instance.shouldRetriggerBuilds}"/>
-    </f:entry>
+    <f:entry><span style="display:block; margin-bottom: 0.5em;"/></f:entry>
+    <f:property field="spotReTriggerBuilds"/>
     <f:entry title="${%JVM options}" field="vmargs">
         <f:textbox/>
     </f:entry>
@@ -129,7 +123,7 @@
    <f:description>Enabling this setting effectively means: <b><u>override</u></b> the Default executor count setting and <b><u>ignore</u></b> any instance-weight overrides if those are set.</f:description>
  </f:entry>
 
-<f:property title="Global Instance Override" field="globalExecutorOverride"/>
+<f:property field="globalExecutorOverride"/>
 <st:include class="${descriptor.clazz}" page="config-entries.jelly" />
 </f:section>
 

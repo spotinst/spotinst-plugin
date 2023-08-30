@@ -40,13 +40,13 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AzureSpotCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                           SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                          Boolean shouldRetriggerBuilds, String vmargs,
+                          SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
                           EnvironmentVariablesNodeProperty environmentVariables, ToolLocationNodeProperty toolLocations,
                           String accountId, ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                           Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                           Integer pendingThreshold) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
@@ -97,8 +97,8 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
 
     @Override
     public Boolean detachInstance(String instanceId) {
-        boolean           retVal           = false;
-        IAzureVmGroupRepo azureVmGroupRepo = RepoManager.getInstance().getAzureVmGroupRepo();
+        boolean              retVal           = false;
+        IAzureVmGroupRepo    azureVmGroupRepo = RepoManager.getInstance().getAzureVmGroupRepo();
         ApiResponse<Boolean> detachVmResponse = azureVmGroupRepo.detachVM(groupId, instanceId, this.accountId);
 
         if (detachVmResponse.isRequestSucceed()) {
@@ -150,8 +150,8 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     public Map<String, String> getInstanceIpsById() {
         Map<String, String> retVal = new HashMap<>();
 
-        IAzureVmGroupRepo               awsGroupRepo      = RepoManager.getInstance().getAzureVmGroupRepo();
-        ApiResponse<List<AzureGroupVm>> instancesResponse = awsGroupRepo.getGroupVms(groupId, accountId);
+        IAzureVmGroupRepo               azureGroupRepo    = RepoManager.getInstance().getAzureVmGroupRepo();
+        ApiResponse<List<AzureGroupVm>> instancesResponse = azureGroupRepo.getGroupVms(groupId, accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<AzureGroupVm> instances = instancesResponse.getValue();
@@ -216,7 +216,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
 
         if (allGroupsSlaves.size() > 0) {
             List<String> elastigroupVmIds =
-                    azureGroupVms.stream().filter(x -> x.getVmName() != null).map(AzureGroupVm::getVmName)
+                    azureGroupVms.stream().map(AzureGroupVm::getVmName).filter(Objects::nonNull)
                                  .collect(Collectors.toList());
 
             for (SpotinstSlave slave : allGroupsSlaves) {

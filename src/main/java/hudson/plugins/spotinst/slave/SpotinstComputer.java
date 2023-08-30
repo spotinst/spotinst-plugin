@@ -4,7 +4,10 @@ import hudson.model.Executor;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
+import hudson.plugins.spotinst.queue.SsiByTaskMapper;
+import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.slaves.SlaveComputer;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpRedirect;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.HttpResponses;
@@ -41,8 +44,28 @@ public class SpotinstComputer extends SlaveComputer {
                     LOGGER.info(msg);
                     this.setAcceptingTasks(false);
                     SpotinstNonLocalizable spotinstNonLocalizable = new SpotinstNonLocalizable(msg);
-                    SpotinstSingleTaskOfflineCause spotinstSingleTaskOfflineCause = new SpotinstSingleTaskOfflineCause(spotinstNonLocalizable);
-                    this.setTemporarilyOffline(true,spotinstSingleTaskOfflineCause);
+                    SpotinstSingleTaskOfflineCause spotinstSingleTaskOfflineCause =
+                            new SpotinstSingleTaskOfflineCause(spotinstNonLocalizable);
+                    this.setTemporarilyOffline(true, spotinstSingleTaskOfflineCause);
+                }
+
+                if(spotinstCloud.getStickyNode()) {
+                    String spotinstNodeSsiId = spotinstNode.getSsiId();
+
+                    if (StringUtils.isNotEmpty(spotinstNodeSsiId)) {
+                        SsiByTaskMapper.putSsiByTask(task.getName(), executor, spotinstNodeSsiId);
+
+                        //TODO: remove - only for logs
+                        if (task instanceof StatefulInterruptedTask) {
+                            StatefulInterruptedTask statefulInterruptedTask = (StatefulInterruptedTask) task;
+                            String                  statefulTaskSsiId       = statefulInterruptedTask.getSsi();
+
+                            if (spotinstNodeSsiId.equals(statefulTaskSsiId) == false) {
+                                LOGGER.warn("stateful task is reserved for ssi {}, however it is running on ssi {}",
+                                            statefulTaskSsiId, spotinstNodeSsiId);
+                            }
+                        }
+                    }
                 }
             }
             else {
@@ -50,12 +73,19 @@ public class SpotinstComputer extends SlaveComputer {
                         "Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode's SpotinstCloud appears to be null.",
                         spotinstNode.getNodeName()));
             }
-        } else {
+        }
+        else {
             LOGGER.error(String.format(
-                    "Executor of Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode is null.", executor.getOwner().getName()));
+                    "Executor of Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode is null.",
+                    executor.getOwner().getName()));
         }
     }
 
+    @Override
+    public void taskCompleted(Executor executor, Queue.Task task, long durationMS){
+        super.taskCompleted(executor, task, durationMS);
+        SsiByTaskMapper.removeSsiByTask(task.getName(), executor);
+    }
     //endregion
 
     //region Constructor
@@ -94,7 +124,8 @@ public class SpotinstComputer extends SlaveComputer {
             }
 
             return new HttpRedirect("..");
-        } catch (NullPointerException ex) {
+        }
+        catch (NullPointerException ex) {
             return HttpResponses.error(500, ex);
         }
     }
@@ -114,6 +145,5 @@ public class SpotinstComputer extends SlaveComputer {
             this.setNode(node);
         }
     }
-
     //endregion
 }

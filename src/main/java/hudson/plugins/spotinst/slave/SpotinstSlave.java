@@ -25,6 +25,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
     private String            instanceId;
     private String            instanceType;
+    private String            ssiId;
     private String            elastigroupId;
     private String            workspaceDir;
     private String            groupUrl;
@@ -34,9 +35,9 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     //endregion
 
     //region Constructor
-    public SpotinstSlave(String name, String elastigroupId, String instanceId, String instanceType, String label,
-                         String idleTerminationMinutes, String workspaceDir, String numOfExecutors, Mode mode,
-                         ComputerLauncher launcher,
+    public SpotinstSlave(String name, String elastigroupId, String instanceId, String instanceType, String ssiId,
+                         String label, String idleTerminationMinutes, String workspaceDir, String numOfExecutors,
+                         Mode mode, ComputerLauncher launcher,
                          List<NodeProperty<?>> nodeProperties) throws Descriptor.FormException, IOException {
 
 
@@ -45,6 +46,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
+        this.ssiId = ssiId;
         this.instanceId = instanceId;
         this.workspaceDir = workspaceDir;
         this.usage = SlaveUsageEnum.fromMode(mode);
@@ -64,6 +66,14 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
     public String getInstanceType() {
         return instanceType;
+    }
+
+    public String getSsiId() {
+        return ssiId;
+    }
+
+    public void setSsiId(String ssiId) {
+        this.ssiId = ssiId;
     }
 
     public String getWorkspaceDir() {

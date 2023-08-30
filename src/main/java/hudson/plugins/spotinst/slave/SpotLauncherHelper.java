@@ -2,6 +2,8 @@ package hudson.plugins.spotinst.slave;
 
 import hudson.model.*;
 import hudson.model.queue.SubTask;
+import hudson.plugins.spotinst.queue.SsiByTaskMapper;
+import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.slaves.SlaveComputer;
 import org.apache.commons.lang.BooleanUtils;
 import org.slf4j.Logger;
@@ -12,8 +14,7 @@ import java.util.List;
 
 
 /**
- * Created by Shibel Karmi Mansour on 31/12/2020.
- *
+ * Created by Shibel Karmi Mansour on 31/12/2020.*
  * A helper class for handling common callbacks (like afterDisconnect) for different types of
  * ComputerLaunchers.
  */
@@ -23,7 +24,7 @@ class SpotLauncherHelper {
     //endregion
 
     //region Methods
-    static void handleDisconnect(final SlaveComputer computer, Boolean shouldRetriggerBuilds){
+    static void handleDisconnect(final SlaveComputer computer, Boolean shouldRetriggerBuilds) {
 
         shouldRetriggerBuilds = resolveShouldRetriggerBuilds(shouldRetriggerBuilds);
 
@@ -53,9 +54,20 @@ class SpotLauncherHelper {
                             actions = ((Actionable) executable).getActions();
                         }
 
-                        LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
+                        String ssiByTaskName = SsiByTaskMapper.removeSsiByTask(task.getName(), executor);
 
-                        Queue.getInstance().schedule2(task, 10, actions);
+                        if (ssiByTaskName != null) {
+                            StatefulInterruptedTask statefulInterruptedTask =
+                                    new StatefulInterruptedTask(ssiByTaskName, task);
+                            LOGGER.info(String.format("RETRIGGERING Stateful Task: %s - WITH ACTIONS: %s", statefulInterruptedTask, actions));
+
+                            Queue.getInstance().schedule2(statefulInterruptedTask, 10, actions);
+                        }
+                        else {
+                            LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
+
+                            Queue.getInstance().schedule2(task, 10, actions);
+                        }
                     }
                 }
 

@@ -1,0 +1,10 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:optionalBlock checked="${it.shouldReTriggerBuilds}" title="${%ReTrigger Builds on Node Interruption}" field="shouldReTriggerBuilds" inline="true">
+        <f:entry title="Use sticky node">
+            <f:checkbox checked="${it.stickyNode}" field="stickyNode"/>
+            <f:description><b>Restrict re-triggered builds on the original ssi</b></f:description>
+            <f:description>In case of a stateful group. The rebuilds will use recycled resources according to stateful configuration.</f:description>
+        </f:entry>
+    </f:optionalBlock>
+</j:jelly>
