@@ -100,12 +100,12 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     protected String getStatefulInstanceId(String instanceId) {
-        return null;//TODO: implement
+        return null;
     }
 
     @Override
     public Boolean deallocateInstance(String instanceId){
-        return false;//TODO: implement
+        return false;
     }
 
     @Override
