@@ -41,8 +41,8 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
-                            String tunnel, Boolean shouldUseWebsocket, SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
-                            EnvironmentVariablesNodeProperty environmentVariables,
+                            String tunnel, Boolean shouldUseWebsocket, SpotReTriggerBuilds spotReTriggerBuilds,
+                            String vmargs, EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
@@ -186,7 +186,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
 
             syncGroupStatefulInstances();
-
             addNewSlaveInstances(instances);
             removeOldSlaveInstances(instances);
         }
@@ -280,7 +279,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
         Map<String, AwsStatefulInstance> ssiById = new HashMap<>();
         statefulInstances.forEach(ssi -> ssiById.put(ssi.getId(), ssi));
-        this.ssiById = ssiById;
+        AwsStatefulInstancesManager.getAwsStatefulInstanceBySsiById().put(groupId, ssiById);
     }
 
     private List<SpotinstSlave> handleNewAwsSpots(AwsScaleUpResult scaleUpResult, String label) {
@@ -429,11 +428,16 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     private String getSsiByInstance(String instanceId) {
         String retVal = null;
-        Optional<AwsStatefulInstance> optionalMatchingSsi =
-                ssiById.values().stream().filter(ssi -> instanceId.equals(ssi.getInstanceId())).findFirst();
+        Map<String, AwsStatefulInstance> ssiById =
+                AwsStatefulInstancesManager.getAwsStatefulInstanceBySsiById().get(groupId);
 
-        if (optionalMatchingSsi.isPresent()) {
-            retVal = optionalMatchingSsi.get().getId();
+        if(ssiById != null) {
+            Optional<AwsStatefulInstance> optionalMatchingSsi =
+                    ssiById.values().stream().filter(ssi -> instanceId.equals(ssi.getInstanceId())).findFirst();
+
+            if (optionalMatchingSsi.isPresent()) {
+                retVal = optionalMatchingSsi.get().getId();
+            }
         }
 
         return retVal;

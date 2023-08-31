@@ -1275,7 +1275,9 @@ public class SpotinstCloudTest {
         Mockito.when(
                        RepoManager.getInstance().getAwsGroupRepo().getGroupInstances(Mockito.anyString(), Mockito.anyString()))
                .thenReturn(new ApiResponse<>(result));
-
+        Mockito.when(
+                       RepoManager.getInstance().getAwsGroupRepo().getStatefulInstances(Mockito.anyString(), Mockito.anyString()))
+               .thenReturn(new ApiResponse<>(new LinkedList<>()));
 
         List<AwsScaleResultNewSpot> spots         = Collections.singletonList(newSpot);
         AwsScaleUpResult            scaleUpResult = new AwsScaleUpResult();
