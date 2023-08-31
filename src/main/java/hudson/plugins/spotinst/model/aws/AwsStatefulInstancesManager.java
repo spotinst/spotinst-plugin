@@ -30,6 +30,7 @@ public class AwsStatefulInstancesManager {
 
         return retVal;
     }
+    //endregion
 
     //region getters & setters
     public static Map<String, Map<String, AwsStatefulInstance>> getAwsStatefulInstanceBySsiById() {
