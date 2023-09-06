@@ -5,6 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
+import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
@@ -14,6 +15,7 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -854,11 +856,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
     abstract List<SpotinstSlave> scaleUp(ProvisionRequest request);
 
     public Boolean removeInstance(String instanceId) {
-        boolean retVal;
-        String  statefulInstanceId = getStatefulInstanceId(instanceId);
-        boolean isStateful         = statefulInstanceId != null;
+        boolean             retVal;
+        AwsStatefulInstance statefulInstance = getStatefulInstance(instanceId);
+        boolean             isStateful       =
+                statefulInstance != null && StringUtils.isNotEmpty(statefulInstance.getId());
 
         if (isStateful) {
+            String statefulInstanceId = statefulInstance.getId();
             retVal = deallocateInstance(statefulInstanceId);
         }
         else {
@@ -868,7 +872,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    protected abstract String getStatefulInstanceId(String instanceId);
+    protected abstract AwsStatefulInstance getStatefulInstance(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 
