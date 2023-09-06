@@ -759,7 +759,16 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public Boolean getShouldReTriggerBuilds() {
-        return getSpotReTriggerBuilds().getShouldReTriggerBuilds();
+        Boolean retVal;
+
+        if(getSpotReTriggerBuilds() == null){
+            retVal = null;
+        }
+        else{
+            retVal = getSpotReTriggerBuilds().getShouldReTriggerBuilds();
+        }
+
+        return retVal;
     }
 
     public void setShouldReTriggerBuilds(Boolean shouldReTriggerBuilds) {
@@ -767,6 +776,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public Boolean getStickyNode() {
+        if(getSpotReTriggerBuilds() == null){
+            return false;
+        }
+
         return getSpotReTriggerBuilds().getStickyNode();
     }
 

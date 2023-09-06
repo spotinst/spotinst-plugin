@@ -4,8 +4,7 @@ import hudson.model.Executor;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
-import hudson.plugins.spotinst.queue.SsiByTaskMapper;
-import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
+import hudson.plugins.spotinst.model.aws.AwsStatefulInstancesManager;
 import hudson.slaves.SlaveComputer;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpRedirect;
@@ -49,22 +48,17 @@ public class SpotinstComputer extends SlaveComputer {
                     this.setTemporarilyOffline(true, spotinstSingleTaskOfflineCause);
                 }
 
-                if(spotinstCloud.getStickyNode()) {
+                if (spotinstCloud.getStickyNode()) {
                     String spotinstNodeSsiId = spotinstNode.getSsiId();
 
                     if (StringUtils.isNotEmpty(spotinstNodeSsiId)) {
-                        SsiByTaskMapper.putSsiByTask(task.getName(), executor, spotinstNodeSsiId);
-
-                        //TODO: remove - only for logs
-                        if (task instanceof StatefulInterruptedTask) {
-                            StatefulInterruptedTask statefulInterruptedTask = (StatefulInterruptedTask) task;
-                            String                  statefulTaskSsiId       = statefulInterruptedTask.getSsi();
-
-                            if (spotinstNodeSsiId.equals(statefulTaskSsiId) == false) {
-                                LOGGER.warn("stateful task is reserved for ssi {}, however it is running on ssi {}",
-                                            statefulTaskSsiId, spotinstNodeSsiId);
-                            }
-                        }
+                        LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
+                                    spotinstNodeSsiId);
+                        AwsStatefulInstancesManager.putSsiByTask(task, executor, spotinstNodeSsiId);
+                    }
+                    else {
+                        LOGGER.info("task {} accepted on a stateless slave {}. no restrictions occur", task.getName(),
+                                    spotinstNode.getNodeName());
                     }
                 }
             }
@@ -82,9 +76,35 @@ public class SpotinstComputer extends SlaveComputer {
     }
 
     @Override
-    public void taskCompleted(Executor executor, Queue.Task task, long durationMS){
+    public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
         super.taskCompleted(executor, task, durationMS);
-        SsiByTaskMapper.removeSsiByTask(task.getName(), executor);
+        SpotinstSlave spotinstNode = this.getNode();
+
+        if (spotinstNode != null) {
+            BaseSpotinstCloud spotinstCloud = spotinstNode.getSpotinstCloud();
+
+            if (spotinstCloud != null) {
+                if (spotinstCloud.getStickyNode()) {
+                    String spotinstNodeSsiId = spotinstNode.getSsiId();
+                    boolean isStatefulNode = StringUtils.isNotEmpty(spotinstNodeSsiId);
+
+                    if (isStatefulNode) {
+                        LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
+                                    spotinstNodeSsiId);
+                        String attachedSsi = AwsStatefulInstancesManager.removeSsiByTask(task, executor);
+                        boolean isTaskReTriggered = StringUtils.isEmpty(attachedSsi);
+
+                        if (isTaskReTriggered) {
+                            AwsStatefulInstancesManager.handleReTriggeredStatefulTask(task, executor);
+                        }
+                        else {
+                            LOGGER.info("unbinding stateful task {} and executor {} from ssi {}", task.getName(),
+                                        executor.getId(), attachedSsi);
+                        }
+                    }
+                }
+            }
+        }
     }
     //endregion
 

@@ -279,7 +279,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
         Map<String, AwsStatefulInstance> ssiById = new HashMap<>();
         statefulInstances.forEach(ssi -> ssiById.put(ssi.getId(), ssi));
-        AwsStatefulInstancesManager.getAwsStatefulInstanceBySsiById().put(groupId, ssiById);
+        AwsStatefulInstancesManager.getAwsStatefulInstanceBySsiByGroupId().put(groupId, ssiById);
     }
 
     private List<SpotinstSlave> handleNewAwsSpots(AwsScaleUpResult scaleUpResult, String label) {
@@ -429,7 +429,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     private String getSsiByInstance(String instanceId) {
         String retVal = null;
         Map<String, AwsStatefulInstance> ssiById =
-                AwsStatefulInstancesManager.getAwsStatefulInstanceBySsiById().get(groupId);
+                AwsStatefulInstancesManager.getAwsStatefulInstanceBySsiByGroupId().get(groupId);
 
         if(ssiById != null) {
             Optional<AwsStatefulInstance> optionalMatchingSsi =

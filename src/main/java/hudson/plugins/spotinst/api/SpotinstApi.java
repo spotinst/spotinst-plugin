@@ -153,9 +153,13 @@ public class SpotinstApi {
         Map<String, String> headers     = buildHeaders();
         Map<String, String> queryParams = buildQueryParams(accountId);
 
-        AwsDetachInstancesRequest request = new AwsDetachInstancesRequest();
-        request.setShouldDecrementTargetCapacity(true);
-        request.setShouldTerminateInstances(true);
+        AwsDeallocateStatefulInstanceRequest request = new AwsDeallocateStatefulInstanceRequest();
+        AwsStatefulDeallocationConfig statefulDeallocation = new AwsStatefulDeallocationConfig();
+        statefulDeallocation.setShouldDeleteImages(true);
+        statefulDeallocation.setShouldDeleteSnapshots(true);
+        statefulDeallocation.setShouldDeleteVolumes(true);
+        statefulDeallocation.setShouldDeleteNetworkInterfaces(true);
+        request.setStatefulDeallocation(statefulDeallocation);
 
         String body = JsonMapper.toJson(request);
 
