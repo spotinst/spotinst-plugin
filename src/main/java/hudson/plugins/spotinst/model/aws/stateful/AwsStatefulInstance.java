@@ -2,7 +2,7 @@ package hudson.plugins.spotinst.model.aws.stateful;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import hudson.plugins.spotinst.common.stateful.StatefulInstance;
+import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.common.stateful.StatefulInstanceStateEnum;
 
 /**
@@ -10,7 +10,7 @@ import hudson.plugins.spotinst.common.stateful.StatefulInstanceStateEnum;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AwsStatefulInstance extends StatefulInstance {
+public class AwsStatefulInstance extends BaseStatefulInstance {
     //region members
     private String                    instanceId;
     private StatefulInstanceStateEnum state;

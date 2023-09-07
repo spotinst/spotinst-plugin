@@ -1,4 +1,4 @@
-package hudson.plugins.spotinst.common.stateful;
+package hudson.plugins.spotinst.model.aws;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -8,18 +8,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class StatefulInstance {
+public class AwsGroupStrategy {
     //region members
-    private String                    id;
+    private AwsGroupPersistence        persistence;
     //endregion
 
     //region getters & setters
-    public String getId() {
-        return id;
+    public AwsGroupPersistence getPersistence() {
+        return persistence;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setPersistence(AwsGroupPersistence persistence) {
+        this.persistence = persistence;
     }
     //endregion
 }

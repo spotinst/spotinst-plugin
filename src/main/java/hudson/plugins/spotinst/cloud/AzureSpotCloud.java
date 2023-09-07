@@ -6,7 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
-import hudson.plugins.spotinst.common.stateful.StatefulInstance;
+import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.azure.AzureGroupVm;
 import hudson.plugins.spotinst.model.azure.AzureScaleUpResultNewVm;
 import hudson.plugins.spotinst.model.azure.AzureVmSizeEnum;
@@ -87,12 +87,12 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected StatefulInstance getStatefulInstance(String instanceId) {
+    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
         return null;//TODO: implement
     }
 
     @Override
-    protected Boolean deallocateInstance(String instanceId) {
+    protected Boolean deallocateInstance(String statefulInstanceId) {
         return false;//TODO: implement
     }
 
@@ -120,7 +120,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
+    protected void internalSyncGroup() {
         IAzureVmGroupRepo               azureVmGroupRepo  = RepoManager.getInstance().getAzureVmGroupRepo();
         ApiResponse<List<AzureGroupVm>> instancesResponse = azureVmGroupRepo.getGroupVms(groupId, this.accountId);
 

@@ -6,7 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
-import hudson.plugins.spotinst.common.stateful.StatefulInstance;
+import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.azure.AzureGroupInstance;
 import hudson.plugins.spotinst.model.azure.AzureScaleSetSizeEnum;
 import hudson.plugins.spotinst.repos.IAzureGroupRepo;
@@ -77,12 +77,12 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected StatefulInstance getStatefulInstance(String instanceId) {
+    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
         return null;//TODO: implement
     }
 
     @Override
-    protected Boolean deallocateInstance(String instanceId) {
+    protected Boolean deallocateInstance(String statefulInstanceId) {
         return false;//TODO: implement
     }
 
@@ -105,12 +105,12 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void syncGroupInstances() {
+    public void syncGroup() {
 
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
+    protected void internalSyncGroup() {
 
     }
 

@@ -5,7 +5,7 @@ import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
-import hudson.plugins.spotinst.common.stateful.StatefulInstance;
+import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.gcp.GcpGroupInstance;
 import hudson.plugins.spotinst.model.gcp.GcpMachineType;
 import hudson.plugins.spotinst.model.gcp.GcpResultNewInstance;
@@ -100,12 +100,12 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected StatefulInstance getStatefulInstance(String instanceId) {
+    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
         return null;//TODO: implement
     }
 
     @Override
-    protected Boolean deallocateInstance(String instanceId) {
+    protected Boolean deallocateInstance(String statefulInstanceId) {
         return false;//TODO: implement
     }
 
@@ -128,7 +128,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
+    protected void internalSyncGroup() {
         IGcpGroupRepo                       gcpGroupRepo      = RepoManager.getInstance().getGcpGroupRepo();
         ApiResponse<List<GcpGroupInstance>> instancesResponse = gcpGroupRepo.getGroupInstances(groupId, this.accountId);
 

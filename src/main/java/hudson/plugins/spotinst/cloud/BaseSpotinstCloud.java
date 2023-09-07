@@ -5,7 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
-import hudson.plugins.spotinst.common.stateful.StatefulInstance;
+import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
@@ -15,7 +15,6 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +51,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   EnvironmentVariablesNodeProperty  environmentVariables;
     private   ToolLocationNodeProperty          toolLocations;
     private   Boolean                           shouldUseWebsocket;
+    private   Boolean                           isStateful;
     private   Boolean                           shouldRetriggerBuilds;
     private   Boolean                           isSingleTaskNodesEnabled;
     private   ComputerConnector                 computerConnector;
@@ -88,6 +88,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.usage = SlaveUsageEnum.NORMAL;
         }
 
+        this.isStateful = null;
         this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
         this.tunnel = tunnel;
         this.shouldUseWebsocket = shouldUseWebsocket;
@@ -856,13 +857,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
     abstract List<SpotinstSlave> scaleUp(ProvisionRequest request);
 
     public Boolean removeInstance(String instanceId) {
-        boolean             retVal;
-        StatefulInstance statefulInstance = getStatefulInstance(instanceId);
-        boolean             isStateful       =
-                statefulInstance != null && StringUtils.isNotEmpty(statefulInstance.getId());
+        boolean retVal;
+        Boolean isStatefulGroup = getIsStateful();
 
-        if (isStateful) {
-            String statefulInstanceId = statefulInstance.getId();
+        if (BooleanUtils.isTrue(isStatefulGroup)) {
+            BaseStatefulInstance statefulInstance   = getStatefulInstance(instanceId);
+            String               statefulInstanceId = statefulInstance.getId();
             retVal = deallocateInstance(statefulInstanceId);
         }
         else {
@@ -872,26 +872,34 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    protected abstract StatefulInstance getStatefulInstance(String instanceId);
+    public Boolean getIsStateful() {
+        return isStateful;
+    }
+
+    public void setIsStateful(Boolean isStateful){
+        this.isStateful = isStateful;
+    }
+
+    protected abstract BaseStatefulInstance getStatefulInstance(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 
-    protected abstract Boolean deallocateInstance(String instanceId);
+    protected abstract Boolean deallocateInstance(String statefulInstanceId);
 
     public abstract String getCloudUrl();
 
-    public void syncGroupInstances() {
+    public void syncGroup() {
         boolean isCloudReadyForGroupCommunication = isCloudReadyForGroupCommunication();
 
         if (isCloudReadyForGroupCommunication) {
-            internalSyncGroupInstances();
+            internalSyncGroup();
         }
         else {
             LOGGER.error(SKIPPED_METHOD_GROUP_IS_NIT_READY_ERROR_LOGGER_FORMAT, "syncGroupInstances", groupId);
         }
     }
 
-    protected abstract void internalSyncGroupInstances();
+    protected abstract void internalSyncGroup();
 
     public abstract Map<String, String> getInstanceIpsById();
 

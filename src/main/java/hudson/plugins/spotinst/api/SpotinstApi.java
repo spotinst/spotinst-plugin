@@ -76,6 +76,23 @@ public class SpotinstApi {
     }
 
     //region AWS
+    public static AwsGroup getAwsGroup(String groupId, String accountId) throws ApiException {
+        AwsGroup retVal      = null;
+        Map<String, String>    headers     = buildHeaders();
+        Map<String, String>    queryParams = buildQueryParams(accountId);
+
+        RestResponse response =
+                RestClient.sendGet(SPOTINST_API_HOST + "/aws/ec2/group/" + groupId, headers, queryParams);
+
+        AwsGroupResponse instancesResponse = getCastedResponse(response, AwsGroupResponse.class);
+
+        if (instancesResponse.getResponse().getItems().size() > 0) {
+            retVal = instancesResponse.getResponse().getItems().get(0);
+        }
+
+        return retVal;
+    }
+
     public static List<AwsGroupInstance> getAwsGroupInstances(String groupId, String accountId) throws ApiException {
         List<AwsGroupInstance> retVal      = new LinkedList<>();
         Map<String, String>    headers     = buildHeaders();
