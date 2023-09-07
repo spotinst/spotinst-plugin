@@ -6,7 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
-import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
+import hudson.plugins.spotinst.common.stateful.StatefulInstance;
 import hudson.plugins.spotinst.model.azure.AzureGroupInstance;
 import hudson.plugins.spotinst.model.azure.AzureScaleSetSizeEnum;
 import hudson.plugins.spotinst.repos.IAzureGroupRepo;
@@ -77,7 +77,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected AwsStatefulInstance getStatefulInstance(String instanceId) {
+    protected StatefulInstance getStatefulInstance(String instanceId) {
         return null;//TODO: implement
     }
 

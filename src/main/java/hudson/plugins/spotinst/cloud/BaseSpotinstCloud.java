@@ -5,7 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
-import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
+import hudson.plugins.spotinst.common.stateful.StatefulInstance;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
@@ -857,7 +857,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     public Boolean removeInstance(String instanceId) {
         boolean             retVal;
-        AwsStatefulInstance statefulInstance = getStatefulInstance(instanceId);
+        StatefulInstance statefulInstance = getStatefulInstance(instanceId);
         boolean             isStateful       =
                 statefulInstance != null && StringUtils.isNotEmpty(statefulInstance.getId());
 
@@ -872,7 +872,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    protected abstract AwsStatefulInstance getStatefulInstance(String instanceId);
+    protected abstract StatefulInstance getStatefulInstance(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 
