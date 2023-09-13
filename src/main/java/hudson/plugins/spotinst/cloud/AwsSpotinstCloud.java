@@ -166,14 +166,40 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected void internalSyncGroup() {
+    protected void internalSyncGroupInstances() {
         IAwsGroupRepo         awsGroupRepo  = RepoManager.getInstance().getAwsGroupRepo();
         ApiResponse<AwsGroup> groupResponse = awsGroupRepo.getGroup(groupId, this.accountId);
 
         if (groupResponse.isRequestSucceed()) {
             AwsGroup awsGroup = groupResponse.getValue();
             initIsStateful(awsGroup);
-            syncGroupInstances();
+            ApiResponse<List<AwsGroupInstance>> instancesResponse =
+                    awsGroupRepo.getGroupInstances(groupId, this.accountId);
+
+            if (instancesResponse.isRequestSucceed()) {
+                List<AwsGroupInstance> instances = instancesResponse.getValue();
+                LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
+
+                Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
+
+                for (AwsGroupInstance instance : instances) {
+                    SlaveInstanceDetails instanceDetails = SlaveInstanceDetails.build(instance);
+                    slaveInstancesDetailsByInstanceId.put(instanceDetails.getInstanceId(), instanceDetails);
+                }
+
+                this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+                if (isStatefulGroup()) {
+                    syncGroupStatefulInstances();
+                }
+
+                addNewSlaveInstances(instances);
+                removeOldSlaveInstances(instances);
+            }
+            else {
+                LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
+                                           instancesResponse.getErrors()));
+            }
         }
         else {
             LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
@@ -249,48 +275,21 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     private void initIsStateful(AwsGroup awsGroup) {
-        boolean          retVal        = false;
-        AwsGroupStrategy groupStrategy = awsGroup.getStrategy();
+        boolean          isSpotGroupStateful = false;
+        AwsGroupStrategy groupStrategy       = awsGroup.getStrategy();
 
         if (groupStrategy != null) {
             AwsGroupPersistence groupPersistence = groupStrategy.getPersistence();
 
             if (groupPersistence != null) {
-                retVal = BooleanUtils.isTrue(groupPersistence.getShouldPersistPrivateIp()) ||
-                         BooleanUtils.isTrue(groupPersistence.getShouldPersistBlockDevices()) ||
-                         BooleanUtils.isTrue(groupPersistence.getShouldPersistRootDevice()) ||
-                         StringUtils.isNotEmpty(groupPersistence.getBlockDevicesMode());
+                isSpotGroupStateful = BooleanUtils.isTrue(groupPersistence.getShouldPersistPrivateIp()) ||
+                                      BooleanUtils.isTrue(groupPersistence.getShouldPersistBlockDevices()) ||
+                                      BooleanUtils.isTrue(groupPersistence.getShouldPersistRootDevice()) ||
+                                      StringUtils.isNotEmpty(groupPersistence.getBlockDevicesMode());
             }
         }
 
-        setIsStateful(retVal);
-    }
-
-    private void syncGroupInstances() {
-        IAwsGroupRepo                       awsGroupRepo      = RepoManager.getInstance().getAwsGroupRepo();
-        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
-
-        if (instancesResponse.isRequestSucceed()) {
-            List<AwsGroupInstance> instances = instancesResponse.getValue();
-            LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
-
-            Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
-
-            for (AwsGroupInstance instance : instances) {
-                SlaveInstanceDetails instanceDetails = SlaveInstanceDetails.build(instance);
-                slaveInstancesDetailsByInstanceId.put(instanceDetails.getInstanceId(), instanceDetails);
-            }
-
-            this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
-
-            syncGroupStatefulInstances();
-            addNewSlaveInstances(instances);
-            removeOldSlaveInstances(instances);
-        }
-        else {
-            LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
-                                       instancesResponse.getErrors()));
-        }
+        setIsStateful(isSpotGroupStateful);
     }
 
     private void syncGroupStatefulInstances() {
@@ -374,7 +373,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             retVal = false;
         }
         else {
-            if (BooleanUtils.isTrue(getIsStateful())) {
+            if (isStatefulGroup()) {
                 AwsStatefulInstance statefulInstance = getStatefulInstance(instance.getInstanceId());
                 retVal = statefulInstance != null && StringUtils.isNotEmpty(statefulInstance.getId()) &&
                          Objects.equals(statefulInstance.getState(), StatefulInstanceStateEnum.ACTIVE);

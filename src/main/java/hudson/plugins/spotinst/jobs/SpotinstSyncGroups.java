@@ -44,7 +44,7 @@ public class SpotinstSyncGroups extends AsyncPeriodicWork {
                     BaseSpotinstCloud spotinstCloud = (BaseSpotinstCloud) cloud;
 
                     try {
-                        spotinstCloud.syncGroup();
+                        spotinstCloud.syncGroupInstances();
                     }
                     catch (Exception e) {
                         LOGGER.error(String.format("Failed to sync group: %s instances", spotinstCloud.getGroupId()),

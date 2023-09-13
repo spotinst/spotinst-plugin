@@ -858,9 +858,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     public Boolean removeInstance(String instanceId) {
         boolean retVal;
-        Boolean isStatefulGroup = getIsStateful();
 
-        if (BooleanUtils.isTrue(isStatefulGroup)) {
+        if (isStatefulGroup()) {
             BaseStatefulInstance statefulInstance   = getStatefulInstance(instanceId);
             String               statefulInstanceId = statefulInstance.getId();
             retVal = deallocateInstance(statefulInstanceId);
@@ -872,11 +871,15 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    public Boolean getIsStateful() {
+    public Boolean isStatefulGroup(){
+        return BooleanUtils.isTrue(getIsStateful());
+    }
+
+    protected Boolean getIsStateful() {
         return isStateful;
     }
 
-    public void setIsStateful(Boolean isStateful){
+    protected void setIsStateful(Boolean isStateful) {
         this.isStateful = isStateful;
     }
 
@@ -888,18 +891,18 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     public abstract String getCloudUrl();
 
-    public void syncGroup() {
+    public void syncGroupInstances() {
         boolean isCloudReadyForGroupCommunication = isCloudReadyForGroupCommunication();
 
         if (isCloudReadyForGroupCommunication) {
-            internalSyncGroup();
+            internalSyncGroupInstances();
         }
         else {
             LOGGER.error(SKIPPED_METHOD_GROUP_IS_NIT_READY_ERROR_LOGGER_FORMAT, "syncGroupInstances", groupId);
         }
     }
 
-    protected abstract void internalSyncGroup();
+    protected abstract void internalSyncGroupInstances();
 
     public abstract Map<String, String> getInstanceIpsById();
 

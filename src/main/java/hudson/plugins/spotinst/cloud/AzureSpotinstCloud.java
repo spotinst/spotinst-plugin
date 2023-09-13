@@ -105,12 +105,12 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void syncGroup() {
+    public void syncGroupInstances() {
 
     }
 
     @Override
-    protected void internalSyncGroup() {
+    protected void internalSyncGroupInstances() {
 
     }
 
