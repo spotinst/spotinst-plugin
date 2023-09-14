@@ -89,8 +89,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.usage = SlaveUsageEnum.NORMAL;
         }
 
+        this.isStatefulGroup = false;
         BlResponse<Boolean> checkIsStatefulGroupResponse = checkIsStatefulGroup();
-        this.isStatefulGroup = checkIsStatefulGroupResponse.isSucceed() && checkIsStatefulGroupResponse.getResult();
+
+        if(checkIsStatefulGroupResponse.isSucceed()) {
+            this.isStatefulGroup = checkIsStatefulGroupResponse.getResult();
+        }
+
         this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
         this.tunnel = tunnel;
         this.shouldUseWebsocket = shouldUseWebsocket;
