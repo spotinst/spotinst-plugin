@@ -38,7 +38,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     protected            Map<String, Integer>                   executorsByInstanceType;
     private              List<? extends SpotinstInstanceWeight> executorsForTypes;
     private              List<String>                           invalidInstanceTypes;
-    private              Map<String, AwsStatefulInstance>       ssiById;
+    private              Map<String, AwsStatefulInstance>       ssiByInstanceId;
     //endregion
 
     //region Constructor
@@ -106,21 +106,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     protected AwsStatefulInstance getStatefulInstance(String instanceId) {
-        AwsStatefulInstance retVal                      = null;
-        boolean             isGroupHasStatefulInstances = ssiById != null && ssiById.isEmpty() == false;
+        AwsStatefulInstance retVal             = null;
+        boolean             isInstanceStateful = ssiByInstanceId != null && ssiByInstanceId.containsKey(instanceId);
 
-        if (isGroupHasStatefulInstances) {
-            Collection<AwsStatefulInstance> groupStatefulInstances = ssiById.values();
-
-            Optional<AwsStatefulInstance> optionalAwsStatefulInstance = groupStatefulInstances.stream()
-                                                                                              .filter(statefulInstance -> instanceId.equals(
-                                                                                                      statefulInstance.getInstanceId()))
-                                                                                              .findFirst();
-            boolean isStatefulInstance = optionalAwsStatefulInstance.isPresent();
-
-            if (isStatefulInstance) {
-                retVal = optionalAwsStatefulInstance.get();
-            }
+        if (isInstanceStateful) {
+            retVal = ssiByInstanceId.get(instanceId);
         }
 
         return retVal;
@@ -166,43 +156,33 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
-        IAwsGroupRepo         awsGroupRepo  = RepoManager.getInstance().getAwsGroupRepo();
-        ApiResponse<AwsGroup> groupResponse = awsGroupRepo.getGroup(groupId, this.accountId);
+    protected void syncGroupInstances() {
+        IAwsGroupRepo awsGroupRepo = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<List<AwsGroupInstance>> instancesResponse = awsGroupRepo.getGroupInstances(groupId, this.accountId);
 
-        if (groupResponse.isRequestSucceed()) {
-            AwsGroup awsGroup = groupResponse.getValue();
-            initIsStateful(awsGroup);
-            ApiResponse<List<AwsGroupInstance>> instancesResponse =
-                    awsGroupRepo.getGroupInstances(groupId, this.accountId);
+        if (instancesResponse.isRequestSucceed()) {
+            List<AwsGroupInstance> instances = instancesResponse.getValue();
+            LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
 
-            if (instancesResponse.isRequestSucceed()) {
-                List<AwsGroupInstance> instances = instancesResponse.getValue();
-                LOGGER.info(String.format("There are %s instances in group %s", instances.size(), groupId));
+            Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
 
-                Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId = new HashMap<>();
-
-                for (AwsGroupInstance instance : instances) {
-                    SlaveInstanceDetails instanceDetails = SlaveInstanceDetails.build(instance);
-                    slaveInstancesDetailsByInstanceId.put(instanceDetails.getInstanceId(), instanceDetails);
-                }
-
-                this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
-
-                if (isStatefulGroup()) {
-                    syncGroupStatefulInstances();
-                }
-
-                addNewSlaveInstances(instances);
-                removeOldSlaveInstances(instances);
+            for (AwsGroupInstance instance : instances) {
+                SlaveInstanceDetails instanceDetails = SlaveInstanceDetails.build(instance);
+                slaveInstancesDetailsByInstanceId.put(instanceDetails.getInstanceId(), instanceDetails);
             }
-            else {
-                LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
-                                           instancesResponse.getErrors()));
+
+            this.slaveInstancesDetailsByInstanceId = new HashMap<>(slaveInstancesDetailsByInstanceId);
+
+            if (isStatefulGroup()) {
+                syncGroupStatefulInstances();
             }
+
+            addNewSlaveInstances(instances);
+            removeOldSlaveInstances(instances);
         }
         else {
-            LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+            LOGGER.error(String.format("Failed to get group %s instances. Errors: %s", groupId,
+                                       instancesResponse.getErrors()));
         }
     }
 
@@ -274,22 +254,33 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
-    private void initIsStateful(AwsGroup awsGroup) {
-        boolean          isSpotGroupStateful = false;
-        AwsGroupStrategy groupStrategy       = awsGroup.getStrategy();
+    @Override
+    protected Boolean checkIsStateful() {
+        Boolean               retVal        = null;
+        IAwsGroupRepo         awsGroupRepo  = RepoManager.getInstance().getAwsGroupRepo();
+        ApiResponse<AwsGroup> groupResponse = awsGroupRepo.getGroup(groupId, this.accountId);
 
-        if (groupStrategy != null) {
-            AwsGroupPersistence groupPersistence = groupStrategy.getPersistence();
+        if (groupResponse.isRequestSucceed()) {
+            retVal = false;
+            AwsGroup awsGroup = groupResponse.getValue();
+            AwsGroupStrategy groupStrategy = awsGroup.getStrategy();
 
-            if (groupPersistence != null) {
-                isSpotGroupStateful = BooleanUtils.isTrue(groupPersistence.getShouldPersistPrivateIp()) ||
-                                      BooleanUtils.isTrue(groupPersistence.getShouldPersistBlockDevices()) ||
-                                      BooleanUtils.isTrue(groupPersistence.getShouldPersistRootDevice()) ||
-                                      StringUtils.isNotEmpty(groupPersistence.getBlockDevicesMode());
+            if (groupStrategy != null) {
+                AwsGroupPersistence groupPersistence = groupStrategy.getPersistence();
+
+                if (groupPersistence != null) {
+                    retVal = BooleanUtils.isTrue(groupPersistence.getShouldPersistPrivateIp()) ||
+                             BooleanUtils.isTrue(groupPersistence.getShouldPersistBlockDevices()) ||
+                             BooleanUtils.isTrue(groupPersistence.getShouldPersistRootDevice()) ||
+                             StringUtils.isNotEmpty(groupPersistence.getBlockDevicesMode());
+                }
             }
         }
+        else {
+            LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+        }
 
-        setIsStateful(isSpotGroupStateful);
+        return retVal;
     }
 
     private void syncGroupStatefulInstances() {
@@ -307,9 +298,9 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             statefulInstances = new LinkedList<>();
         }
 
-        Map<String, AwsStatefulInstance> ssiById = new HashMap<>();
-        statefulInstances.forEach(ssi -> ssiById.put(ssi.getId(), ssi));
-        this.ssiById = ssiById;
+        Map<String, AwsStatefulInstance> ssiByInstanceId = new HashMap<>();
+        statefulInstances.forEach(ssi -> ssiByInstanceId.put(ssi.getInstanceId(), ssi));
+        this.ssiByInstanceId = ssiByInstanceId;
     }
 
     private List<SpotinstSlave> handleNewAwsSpots(AwsScaleUpResult scaleUpResult, String label) {

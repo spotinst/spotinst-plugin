@@ -15,6 +15,7 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.usage = SlaveUsageEnum.NORMAL;
         }
 
-        this.isStateful = null;
+        this.isStateful = checkIsStateful();//TODO: consult Ziv
         this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
         this.tunnel = tunnel;
         this.shouldUseWebsocket = shouldUseWebsocket;
@@ -861,8 +862,15 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         if (isStatefulGroup()) {
             BaseStatefulInstance statefulInstance   = getStatefulInstance(instanceId);
-            String               statefulInstanceId = statefulInstance.getId();
-            retVal = deallocateInstance(statefulInstanceId);
+
+            if(statefulInstance != null && StringUtils.isNotEmpty(statefulInstance.getId())) {
+                String statefulInstanceId = statefulInstance.getId();
+                retVal = deallocateInstance(statefulInstanceId);
+            }
+            else{
+                LOGGER.error("Cannot deallocate instance '{}', because it's not stateful", instanceId);
+                retVal = false;
+            }
         }
         else {
             retVal = detachInstance(instanceId);
@@ -871,16 +879,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
+    protected Boolean checkIsStateful(){
+        return false;
+    }
+
     public Boolean isStatefulGroup(){
-        return BooleanUtils.isTrue(getIsStateful());
-    }
-
-    protected Boolean getIsStateful() {
-        return isStateful;
-    }
-
-    protected void setIsStateful(Boolean isStateful) {
-        this.isStateful = isStateful;
+        return BooleanUtils.isTrue(isStateful);
     }
 
     protected abstract BaseStatefulInstance getStatefulInstance(String instanceId);
@@ -891,18 +895,24 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     public abstract String getCloudUrl();
 
-    public void syncGroupInstances() {
+    public void syncGroup() {
         boolean isCloudReadyForGroupCommunication = isCloudReadyForGroupCommunication();
 
         if (isCloudReadyForGroupCommunication) {
-            internalSyncGroupInstances();
+            Boolean isStateful = checkIsStateful();
+
+            if(isStateful != null){
+                this.isStateful = isStateful;
+            }
+
+            syncGroupInstances();
         }
         else {
             LOGGER.error(SKIPPED_METHOD_GROUP_IS_NIT_READY_ERROR_LOGGER_FORMAT, "syncGroupInstances", groupId);
         }
     }
 
-    protected abstract void internalSyncGroupInstances();
+    protected abstract void syncGroupInstances();
 
     public abstract Map<String, String> getInstanceIpsById();
 
