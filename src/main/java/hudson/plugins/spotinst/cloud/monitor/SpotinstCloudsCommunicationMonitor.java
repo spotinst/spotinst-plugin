@@ -8,6 +8,7 @@ import hudson.plugins.spotinst.common.SpotinstCloudCommunicationState;
 import jenkins.model.Jenkins;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -24,9 +25,7 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
     //region Overridden Public Methods
     @Override
     public boolean isActivated() {
-        Boolean isActivated =
-                isSpotinstCloudsCommunicationFailuresExist() || isSpotinstCloudsCommunicationInitializingExist();
-        return isActivated;
+        return isSpotinstCloudsCommunicationFailuresExist() || isSpotinstCloudsCommunicationInitializingExist();
     }
 
     @Override
@@ -45,45 +44,61 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
     }
 
     private boolean isSpotinstCloudsCommunicationStateExist(SpotinstCloudCommunicationState state) {
-        Stream<GroupLockingManager> cloudGroupsLockingManager =
-                Jenkins.getInstance().clouds.stream().filter(cloud -> cloud instanceof BaseSpotinstCloud)
-                                            .map(baseCloud -> ((BaseSpotinstCloud) baseCloud).getGroupLockingManager())
-                                            .filter(Objects::nonNull);
-        boolean isCloudsWithReadyStateExist =
-                cloudGroupsLockingManager.anyMatch(groupDetails -> state == groupDetails.getCloudCommunicationState());
+        boolean                     retVal               = false;
+        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
 
-        return isCloudsWithReadyStateExist;
+        if (groupLockingManagers != null) {
+            retVal = groupLockingManagers.anyMatch(groupDetails -> state == groupDetails.getCloudCommunicationState());
+        }
+
+        return retVal;
+    }
+    //endregion
+
+    //region private methods
+    private Stream<GroupLockingManager> getGroupLockingManagers() {
+        Stream<GroupLockingManager> retVal  = null;
+        Jenkins                     jenkins = Jenkins.getInstanceOrNull();
+
+        if (jenkins != null) {
+            retVal = jenkins.clouds.stream().filter(cloud -> cloud instanceof BaseSpotinstCloud)
+                                   .map(baseCloud -> ((BaseSpotinstCloud) baseCloud).getGroupLockingManager())
+                                   .filter(Objects::nonNull);
+        }
+
+        return retVal;
     }
     //endregion
 
     //region getters & setters
     public List<String> getSpotinstCloudsCommunicationFailures() {
-        Stream<GroupLockingManager> groupsDetails =
-                Jenkins.getInstance().clouds.stream().filter(cloud -> cloud instanceof BaseSpotinstCloud)
-                                            .map(baseCloud -> ((BaseSpotinstCloud) baseCloud).getGroupLockingManager())
-                                            .filter(Objects::nonNull);
-        spotinstCloudsCommunicationFailures = groupsDetails.filter(
-                                                                   group -> group.getCloudCommunicationState() == SpotinstCloudCommunicationState.FAILED)
-                                                           .map(GroupLockingManager::getErrorDescription)
-                                                           .collect(Collectors.toList());
+        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
+
+        if (groupLockingManagers != null) {
+            spotinstCloudsCommunicationFailures = groupLockingManagers.filter(
+                                                                              group -> group.getCloudCommunicationState() == SpotinstCloudCommunicationState.FAILED)
+                                                                      .map(GroupLockingManager::getErrorDescription)
+                                                                      .collect(Collectors.toList());
+        }
+        else {
+            spotinstCloudsCommunicationFailures = new LinkedList<>();
+        }
+
         return spotinstCloudsCommunicationFailures;
     }
 
     public String getSpotinstCloudsCommunicationInitializing() {
         String retVal;
-
         spotinstCloudsCommunicationInitializing = new ArrayList<>();
+        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
 
-        Stream<GroupLockingManager> groupsDetails =
-                Jenkins.getInstance().clouds.stream().filter(cloud -> cloud instanceof BaseSpotinstCloud)
-                                            .map(baseCloud -> ((BaseSpotinstCloud) baseCloud).getGroupLockingManager())
-                                            .filter(Objects::nonNull);
-
-        groupsDetails.forEach(group -> {
-            if (group.getCloudCommunicationState() == SpotinstCloudCommunicationState.INITIALIZING) {
-                spotinstCloudsCommunicationInitializing.add(group.getGroupId());
-            }
-        });
+        if (groupLockingManagers != null) {
+            groupLockingManagers.forEach(group -> {
+                if (group.getCloudCommunicationState() == SpotinstCloudCommunicationState.INITIALIZING) {
+                    spotinstCloudsCommunicationInitializing.add(group.getGroupId());
+                }
+            });
+        }
 
         retVal = String.join(", ", spotinstCloudsCommunicationInitializing);
 
