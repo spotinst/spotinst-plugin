@@ -6,7 +6,6 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
-import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.azure.AzureGroupVm;
 import hudson.plugins.spotinst.model.azure.AzureScaleUpResultNewVm;
 import hudson.plugins.spotinst.model.azure.AzureVmSizeEnum;
@@ -93,7 +92,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
+    protected String getSsiId(String instanceId) {
         return null;//TODO: implement
     }
 

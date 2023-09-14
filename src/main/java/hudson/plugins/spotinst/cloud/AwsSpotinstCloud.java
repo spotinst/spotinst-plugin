@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by ohadmuchnik on 20/03/2017.
@@ -106,7 +107,18 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected AwsStatefulInstance getStatefulInstance(String instanceId) {
+    protected String getSsiId(String instanceId) {
+        String retVal             = null;
+        AwsStatefulInstance statefulInstance = getStatefulInstance(instanceId);
+
+        if(statefulInstance != null){
+            retVal = statefulInstance.getId();;
+        }
+
+        return retVal;
+    }
+
+    private AwsStatefulInstance getStatefulInstance(String instanceId) {
         AwsStatefulInstance retVal             = null;
         boolean             isInstanceStateful = ssiByInstanceId != null && ssiByInstanceId.containsKey(instanceId);
 
@@ -294,9 +306,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
         if (statefulInstancesResponse.isRequestSucceed()) {
             List<AwsStatefulInstance>        statefulInstances = statefulInstancesResponse.getValue();
-            Map<String, AwsStatefulInstance> ssiByInstanceId   = new HashMap<>();
-            statefulInstances.forEach(ssi -> ssiByInstanceId.put(ssi.getInstanceId(), ssi));
-            this.ssiByInstanceId = ssiByInstanceId;
+            this.ssiByInstanceId = statefulInstances.stream().collect(Collectors.toMap(AwsStatefulInstance::getInstanceId, statefulInstance -> statefulInstance));
         }
         else {
             LOGGER.error(String.format("Failed to get group %s stateful instances. Errors: %s", groupId,
@@ -368,8 +378,9 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         else {
             if (isStatefulGroup()) {
                 AwsStatefulInstance statefulInstance = getStatefulInstance(instance.getInstanceId());
-                retVal = statefulInstance != null &&
+                boolean isInstanceReadyForUse = statefulInstance != null &&
                          Objects.equals(statefulInstance.getState(), StatefulInstanceStateEnum.ACTIVE);
+                retVal = isInstanceReadyForUse;
             }
             else {
                 retVal = true;

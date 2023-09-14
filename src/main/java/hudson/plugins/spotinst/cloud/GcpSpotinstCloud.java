@@ -5,7 +5,6 @@ import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
-import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.model.gcp.GcpGroupInstance;
 import hudson.plugins.spotinst.model.gcp.GcpMachineType;
@@ -106,7 +105,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
+    protected String getSsiId(String instanceId) {
         return null;//TODO: implement
     }
 

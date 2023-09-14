@@ -5,7 +5,6 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
-import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
@@ -89,11 +88,15 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.usage = SlaveUsageEnum.NORMAL;
         }
 
-        this.isStatefulGroup = false;
+
         BlResponse<Boolean> checkIsStatefulGroupResponse = checkIsStatefulGroup();
 
-        if(checkIsStatefulGroupResponse.isSucceed()) {
+        if (checkIsStatefulGroupResponse.isSucceed()) {
             this.isStatefulGroup = checkIsStatefulGroupResponse.getResult();
+        }
+        else {
+            LOGGER.warn("failed to get the group's details, currently referring to it as stateless");
+            this.isStatefulGroup = false;
         }
 
         this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
@@ -867,10 +870,9 @@ public abstract class BaseSpotinstCloud extends Cloud {
         boolean retVal;
 
         if (isStatefulGroup()) {
-            BaseStatefulInstance statefulInstance = getStatefulInstance(instanceId);
+            String statefulInstanceId = getSsiId(instanceId);
 
-            if (statefulInstance != null) {
-                String statefulInstanceId = statefulInstance.getId();
+            if (statefulInstanceId != null) {
                 retVal = deallocateInstance(statefulInstanceId);
             }
             else {
@@ -891,7 +893,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return isStatefulGroup;
     }
 
-    protected abstract BaseStatefulInstance getStatefulInstance(String instanceId);
+    protected abstract String getSsiId(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 
