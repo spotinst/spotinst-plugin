@@ -51,7 +51,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   EnvironmentVariablesNodeProperty  environmentVariables;
     private   ToolLocationNodeProperty          toolLocations;
     private   Boolean                           shouldUseWebsocket;
-    private   boolean                           isStatefulGroup;
     private   Boolean                           shouldRetriggerBuilds;
     private   Boolean                           isSingleTaskNodesEnabled;
     private   ComputerConnector                 computerConnector;
@@ -60,6 +59,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   SpotGlobalExecutorOverride        globalExecutorOverride;
     protected Integer                           pendingThreshold;
     private   GroupLockingManager               groupLockingManager;
+    private   boolean                           isStatefulGroup;
     //endregion
 
     //region Constructor
@@ -86,17 +86,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
         else {
             this.usage = SlaveUsageEnum.NORMAL;
-        }
-
-
-        BlResponse<Boolean> checkIsStatefulGroupResponse = checkIsStatefulGroup();
-
-        if (checkIsStatefulGroupResponse.isSucceed()) {
-            this.isStatefulGroup = checkIsStatefulGroupResponse.getResult();
-        }
-        else {
-            LOGGER.warn("failed to get the group's details, currently referring to it as stateless");
-            this.isStatefulGroup = false;
         }
 
         this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
@@ -141,6 +130,16 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         groupLockingManager = new GroupLockingManager(groupId, accountId);
         groupLockingManager.syncGroupController();
+
+        BlResponse<Boolean> checkIsStatefulGroupResponse = checkIsStatefulGroup();
+
+        if (checkIsStatefulGroupResponse.isSucceed()) {
+            this.isStatefulGroup = checkIsStatefulGroupResponse.getResult();
+        }
+        else {
+            LOGGER.warn("failed to get the group's details, currently referring to it as stateless");
+            this.isStatefulGroup = false;
+        }
     }
     //endregion
 
@@ -876,7 +875,9 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 retVal = deallocateInstance(statefulInstanceId);
             }
             else {
-                LOGGER.error("Cannot deallocate instance '{}', because it's not stateful", instanceId);
+                LOGGER.warn(
+                        "Instance '{}' is not in the group's stateful instances, and currently cannot be deallocated",
+                        instanceId);
                 retVal = false;
             }
         }

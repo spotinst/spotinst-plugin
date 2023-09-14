@@ -108,11 +108,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
     @Override
     protected String getSsiId(String instanceId) {
-        String retVal             = null;
+        String              retVal           = null;
         AwsStatefulInstance statefulInstance = getStatefulInstance(instanceId);
 
-        if(statefulInstance != null){
-            retVal = statefulInstance.getId();;
+        if (statefulInstance != null) {
+            retVal = statefulInstance.getId();
         }
 
         return retVal;
@@ -274,7 +274,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         ApiResponse<AwsGroup> groupResponse = awsGroupRepo.getGroup(groupId, this.accountId);
 
         if (groupResponse.isRequestSucceed()) {
-            Boolean result = false;
+            Boolean          result        = false;
             AwsGroup         awsGroup      = groupResponse.getValue();
             AwsGroupStrategy groupStrategy = awsGroup.getStrategy();
 
@@ -305,8 +305,9 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                 awsGroupRepo.getStatefulInstances(groupId, this.accountId);
 
         if (statefulInstancesResponse.isRequestSucceed()) {
-            List<AwsStatefulInstance>        statefulInstances = statefulInstancesResponse.getValue();
-            this.ssiByInstanceId = statefulInstances.stream().collect(Collectors.toMap(AwsStatefulInstance::getInstanceId, statefulInstance -> statefulInstance));
+            List<AwsStatefulInstance> statefulInstances = statefulInstancesResponse.getValue();
+            this.ssiByInstanceId = statefulInstances.stream().collect(
+                    Collectors.toMap(AwsStatefulInstance::getInstanceId, statefulInstance -> statefulInstance));
         }
         else {
             LOGGER.error(String.format("Failed to get group %s stateful instances. Errors: %s", groupId,
@@ -378,9 +379,10 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         else {
             if (isStatefulGroup()) {
                 AwsStatefulInstance statefulInstance = getStatefulInstance(instance.getInstanceId());
-                boolean isInstanceReadyForUse = statefulInstance != null &&
-                         Objects.equals(statefulInstance.getState(), StatefulInstanceStateEnum.ACTIVE);
-                retVal = isInstanceReadyForUse;
+                boolean isStatefulInstanceReadyForUse = statefulInstance != null &&
+                                                        Objects.equals(statefulInstance.getState(),
+                                                                       StatefulInstanceStateEnum.ACTIVE);
+                retVal = isStatefulInstanceReadyForUse;
             }
             else {
                 retVal = true;
