@@ -6,6 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.model.gcp.GcpGroupInstance;
 import hudson.plugins.spotinst.model.gcp.GcpMachineType;
 import hudson.plugins.spotinst.model.gcp.GcpResultNewInstance;
@@ -97,6 +98,11 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
         }
 
         return retVal;
+    }
+
+    @Override
+    protected BlResponse<Boolean> checkIsStatefulGroup() {
+        return new BlResponse<>(false);
     }
 
     @Override

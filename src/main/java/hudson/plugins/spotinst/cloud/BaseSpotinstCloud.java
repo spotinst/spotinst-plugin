@@ -6,6 +6,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
 import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
@@ -15,7 +16,6 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   EnvironmentVariablesNodeProperty  environmentVariables;
     private   ToolLocationNodeProperty          toolLocations;
     private   Boolean                           shouldUseWebsocket;
-    private   Boolean                           isStateful;
+    private   boolean                           isStatefulGroup;
     private   Boolean                           shouldRetriggerBuilds;
     private   Boolean                           isSingleTaskNodesEnabled;
     private   ComputerConnector                 computerConnector;
@@ -89,7 +89,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.usage = SlaveUsageEnum.NORMAL;
         }
 
-        this.isStateful = checkIsStateful();//TODO: consult Ziv
+        BlResponse<Boolean> checkIsStatefulGroupResponse = checkIsStatefulGroup();
+        this.isStatefulGroup = checkIsStatefulGroupResponse.isSucceed() && checkIsStatefulGroupResponse.getResult();
         this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
         this.tunnel = tunnel;
         this.shouldUseWebsocket = shouldUseWebsocket;
@@ -861,13 +862,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
         boolean retVal;
 
         if (isStatefulGroup()) {
-            BaseStatefulInstance statefulInstance   = getStatefulInstance(instanceId);
+            BaseStatefulInstance statefulInstance = getStatefulInstance(instanceId);
 
-            if(statefulInstance != null && StringUtils.isNotEmpty(statefulInstance.getId())) {
+            if (statefulInstance != null) {
                 String statefulInstanceId = statefulInstance.getId();
                 retVal = deallocateInstance(statefulInstanceId);
             }
-            else{
+            else {
                 LOGGER.error("Cannot deallocate instance '{}', because it's not stateful", instanceId);
                 retVal = false;
             }
@@ -879,12 +880,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    protected Boolean checkIsStateful(){
-        return false;
-    }
+    protected abstract BlResponse<Boolean> checkIsStatefulGroup();
 
-    public Boolean isStatefulGroup(){
-        return BooleanUtils.isTrue(isStateful);
+    public Boolean isStatefulGroup() {
+        return isStatefulGroup;
     }
 
     protected abstract BaseStatefulInstance getStatefulInstance(String instanceId);
@@ -899,10 +898,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         boolean isCloudReadyForGroupCommunication = isCloudReadyForGroupCommunication();
 
         if (isCloudReadyForGroupCommunication) {
-            Boolean isStateful = checkIsStateful();
+            BlResponse<Boolean> isStatefulResponse = checkIsStatefulGroup();
 
-            if(isStateful != null){
-                this.isStateful = isStateful;
+            if (isStatefulResponse.isSucceed()) {
+                this.isStatefulGroup = isStatefulResponse.getResult();
             }
 
             syncGroupInstances();

@@ -9,6 +9,7 @@ import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.common.stateful.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.azure.AzureGroupInstance;
 import hudson.plugins.spotinst.model.azure.AzureScaleSetSizeEnum;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.repos.IAzureGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
@@ -74,6 +75,11 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
         }
 
         return retVal;
+    }
+
+    @Override
+    protected BlResponse<Boolean> checkIsStatefulGroup() {
+        return new BlResponse<>(false);
     }
 
     @Override
