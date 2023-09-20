@@ -6,11 +6,9 @@ import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
 import hudson.plugins.spotinst.common.GroupLockingManager;
 import hudson.plugins.spotinst.common.SpotinstCloudCommunicationState;
 import jenkins.model.Jenkins;
+import org.apache.commons.collections.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,6 +23,8 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
     //region Overridden Public Methods
     @Override
     public boolean isActivated() {
+        initSpotinstCloudsCommunicationInitializing();
+        initSpotinstCloudsCommunicationFailures();
         return isSpotinstCloudsCommunicationFailuresExist() || isSpotinstCloudsCommunicationInitializingExist();
     }
 
@@ -36,26 +36,44 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
 
     //region methods
     public boolean isSpotinstCloudsCommunicationFailuresExist() {
-        return isSpotinstCloudsCommunicationStateExist(SpotinstCloudCommunicationState.FAILED);
+        return CollectionUtils.isNotEmpty(spotinstCloudsCommunicationFailures);
     }
 
     public boolean isSpotinstCloudsCommunicationInitializingExist() {
-        return isSpotinstCloudsCommunicationStateExist(SpotinstCloudCommunicationState.INITIALIZING);
-    }
-
-    private boolean isSpotinstCloudsCommunicationStateExist(SpotinstCloudCommunicationState state) {
-        boolean                     retVal               = false;
-        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
-
-        if (groupLockingManagers != null) {
-            retVal = groupLockingManagers.anyMatch(groupDetails -> state == groupDetails.getCloudCommunicationState());
-        }
-
-        return retVal;
+        return CollectionUtils.isNotEmpty(spotinstCloudsCommunicationInitializing);
     }
     //endregion
 
     //region private methods
+    private void initSpotinstCloudsCommunicationFailures() {
+        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
+
+        if (groupLockingManagers != null) {
+            spotinstCloudsCommunicationFailures = groupLockingManagers.filter(
+                                                                              group -> group.getCloudCommunicationState() == SpotinstCloudCommunicationState.FAILED)
+                                                                      .map(GroupLockingManager::getErrorDescription)
+                                                                      .collect(Collectors.toList());
+        }
+        else {
+            spotinstCloudsCommunicationFailures = Collections.emptyList();
+        }
+    }
+
+    private void initSpotinstCloudsCommunicationInitializing() {
+        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
+
+        if (groupLockingManagers != null) {
+            spotinstCloudsCommunicationInitializing = groupLockingManagers.filter(
+                                                                                  group -> group.getCloudCommunicationState() == SpotinstCloudCommunicationState.INITIALIZING)
+                                                                          .map(GroupLockingManager::getGroupId)
+                                                                          .collect(Collectors.toList());
+        }
+        else {
+            spotinstCloudsCommunicationInitializing = Collections.emptyList();
+        }
+
+    }
+
     private Stream<GroupLockingManager> getGroupLockingManagers() {
         Stream<GroupLockingManager> retVal  = null;
         Jenkins                     jenkins = Jenkins.getInstanceOrNull();
@@ -72,37 +90,11 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
 
     //region getters & setters
     public List<String> getSpotinstCloudsCommunicationFailures() {
-        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
-
-        if (groupLockingManagers != null) {
-            spotinstCloudsCommunicationFailures = groupLockingManagers.filter(
-                                                                              group -> group.getCloudCommunicationState() == SpotinstCloudCommunicationState.FAILED)
-                                                                      .map(GroupLockingManager::getErrorDescription)
-                                                                      .collect(Collectors.toList());
-        }
-        else {
-            spotinstCloudsCommunicationFailures = new LinkedList<>();
-        }
-
         return spotinstCloudsCommunicationFailures;
     }
 
     public String getSpotinstCloudsCommunicationInitializing() {
-        String retVal;
-        spotinstCloudsCommunicationInitializing = new ArrayList<>();
-        Stream<GroupLockingManager> groupLockingManagers = getGroupLockingManagers();
-
-        if (groupLockingManagers != null) {
-            groupLockingManagers.forEach(group -> {
-                if (group.getCloudCommunicationState() == SpotinstCloudCommunicationState.INITIALIZING) {
-                    spotinstCloudsCommunicationInitializing.add(group.getGroupId());
-                }
-            });
-        }
-
-        retVal = String.join(", ", spotinstCloudsCommunicationInitializing);
-
-        return retVal;
+        return String.join(", ", spotinstCloudsCommunicationInitializing);
     }
     //endregion
 }
