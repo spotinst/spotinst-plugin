@@ -5,6 +5,7 @@ import hudson.model.Node;
 import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.model.gcp.GcpGroupInstance;
 import hudson.plugins.spotinst.model.gcp.GcpMachineType;
 import hudson.plugins.spotinst.model.gcp.GcpResultNewInstance;
@@ -42,14 +43,14 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public GcpSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                            SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
+                            Boolean shouldRetriggerBuilds, String vmargs,
                             EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                             Integer pendingThreshold) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
@@ -99,19 +100,24 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected String getStatefulInstanceId(String instanceId) {
-        return null;
+    protected BlResponse<Boolean> checkIsStatefulGroup() {
+        return new BlResponse<>(false);
     }
 
     @Override
-    public Boolean deallocateInstance(String instanceId){
-        return false;
+    protected String getSsiId(String instanceId) {
+        return null;//TODO: implement
     }
 
     @Override
-    public Boolean detachInstance(String instanceId) {
-        boolean       retVal       = false;
-        IGcpGroupRepo gcpGroupRepo = RepoManager.getInstance().getGcpGroupRepo();
+    protected Boolean deallocateInstance(String statefulInstanceId) {
+        return false;//TODO: implement
+    }
+
+    @Override
+    protected Boolean detachInstance(String instanceId) {
+        Boolean              retVal                 = false;
+        IGcpGroupRepo        gcpGroupRepo           = RepoManager.getInstance().getGcpGroupRepo();
         ApiResponse<Boolean> detachInstanceResponse = gcpGroupRepo.detachInstance(groupId, instanceId, this.accountId);
 
         if (detachInstanceResponse.isRequestSucceed()) {
@@ -127,7 +133,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
+    protected void syncGroupInstances() {
         IGcpGroupRepo                       gcpGroupRepo      = RepoManager.getInstance().getGcpGroupRepo();
         ApiResponse<List<GcpGroupInstance>> instancesResponse = gcpGroupRepo.getGroupInstances(groupId, this.accountId);
 
@@ -273,7 +279,7 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     }
 
     private Boolean isSlaveExistForGcpInstance(GcpGroupInstance instance) {
-        boolean retVal = false;
+        Boolean retVal = false;
 
         Node node = Jenkins.getInstance().getNode(instance.getInstanceName());
 

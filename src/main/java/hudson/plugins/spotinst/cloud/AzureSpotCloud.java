@@ -9,6 +9,7 @@ import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureGroupVm;
 import hudson.plugins.spotinst.model.azure.AzureScaleUpResultNewVm;
 import hudson.plugins.spotinst.model.azure.AzureVmSizeEnum;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.repos.IAzureVmGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
@@ -40,13 +41,13 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AzureSpotCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                           SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                          SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
+                          Boolean shouldRetriggerBuilds, String vmargs,
                           EnvironmentVariablesNodeProperty environmentVariables, ToolLocationNodeProperty toolLocations,
                           String accountId, ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                           Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                           Integer pendingThreshold) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
@@ -86,18 +87,23 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected String getStatefulInstanceId(String instanceId) {
+    protected BlResponse<Boolean> checkIsStatefulGroup() {
+        return new BlResponse<>(false);
+    }
+
+    @Override
+    protected String getSsiId(String instanceId) {
         return null;//TODO: implement
     }
 
     @Override
-    public Boolean deallocateInstance(String instanceId) {
+    protected Boolean deallocateInstance(String statefulInstanceId) {
         return false;//TODO: implement
     }
 
     @Override
-    public Boolean detachInstance(String instanceId) {
-        boolean              retVal           = false;
+    protected Boolean detachInstance(String instanceId) {
+        Boolean              retVal           = false;
         IAzureVmGroupRepo    azureVmGroupRepo = RepoManager.getInstance().getAzureVmGroupRepo();
         ApiResponse<Boolean> detachVmResponse = azureVmGroupRepo.detachVM(groupId, instanceId, this.accountId);
 
@@ -119,7 +125,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
+    protected void syncGroupInstances() {
         IAzureVmGroupRepo               azureVmGroupRepo  = RepoManager.getInstance().getAzureVmGroupRepo();
         ApiResponse<List<AzureGroupVm>> instancesResponse = azureVmGroupRepo.getGroupVms(groupId, this.accountId);
 
@@ -150,8 +156,8 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     public Map<String, String> getInstanceIpsById() {
         Map<String, String> retVal = new HashMap<>();
 
-        IAzureVmGroupRepo               azureGroupRepo    = RepoManager.getInstance().getAzureVmGroupRepo();
-        ApiResponse<List<AzureGroupVm>> instancesResponse = azureGroupRepo.getGroupVms(groupId, accountId);
+        IAzureVmGroupRepo               awsGroupRepo      = RepoManager.getInstance().getAzureVmGroupRepo();
+        ApiResponse<List<AzureGroupVm>> instancesResponse = awsGroupRepo.getGroupVms(groupId, accountId);
 
         if (instancesResponse.isRequestSucceed()) {
             List<AzureGroupVm> instances = instancesResponse.getValue();
@@ -216,13 +222,13 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
 
         if (allGroupsSlaves.size() > 0) {
             List<String> elastigroupVmIds =
-                    azureGroupVms.stream().map(AzureGroupVm::getVmName).filter(Objects::nonNull)
+                    azureGroupVms.stream().filter(x -> x.getVmName() != null).map(AzureGroupVm::getVmName)
                                  .collect(Collectors.toList());
 
             for (SpotinstSlave slave : allGroupsSlaves) {
                 String slaveInstanceId = slave.getInstanceId();
 
-                boolean slaveIdNotNull  = slaveInstanceId != null;
+                Boolean slaveIdNotNull  = slaveInstanceId != null;
                 Boolean slaveExistsInEg = elastigroupVmIds.contains(slaveInstanceId);
 
                 if (slaveIdNotNull && BooleanUtils.isFalse(slaveExistsInEg)) {
@@ -251,7 +257,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
         if (azureGroupVms.size() > 0) {
 
             for (AzureGroupVm vm : azureGroupVms) {
-                boolean doesSlaveNotExist = BooleanUtils.isFalse(isSlaveExistForInstance(vm));
+                Boolean doesSlaveNotExist = BooleanUtils.isFalse(isSlaveExistForInstance(vm));
 
                 if (doesSlaveNotExist) {
                     LOGGER.info(String.format("Instance: %s of group: %s doesn't have slave , adding new one",
@@ -289,7 +295,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
 
 
     private Boolean isSlaveExistForInstance(AzureGroupVm vm) {
-        boolean retVal = false;
+        Boolean retVal = false;
         Node    node   = Jenkins.get().getNode(vm.getVmName());
 
         if (node != null) {

@@ -8,6 +8,7 @@ import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureGroupInstance;
 import hudson.plugins.spotinst.model.azure.AzureScaleSetSizeEnum;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.repos.IAzureGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
@@ -38,14 +39,14 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AzureSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                               SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                              SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
+                              Boolean shouldRetriggerBuilds, String vmargs,
                               EnvironmentVariablesNodeProperty environmentVariables,
                               ToolLocationNodeProperty toolLocations, String accountId,
                               ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                               Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                               Integer pendingThreshold) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
@@ -76,18 +77,23 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected String getStatefulInstanceId(String instanceId) {
+    protected BlResponse<Boolean> checkIsStatefulGroup() {
+        return new BlResponse<>(false);
+    }
+
+    @Override
+    protected String getSsiId(String instanceId) {
         return null;//TODO: implement
     }
 
     @Override
-    public Boolean deallocateInstance(String instanceId) {
+    protected Boolean deallocateInstance(String statefulInstanceId) {
         return false;//TODO: implement
     }
 
     @Override
-    public Boolean detachInstance(String instanceId) {
-        boolean              retVal                 = false;
+    protected Boolean detachInstance(String instanceId) {
+        Boolean              retVal                 = false;
         IAzureGroupRepo      azureGroupRepo         = RepoManager.getInstance().getAzureGroupRepo();
         ApiResponse<Boolean> detachInstanceResponse = azureGroupRepo.detachInstance(groupId, instanceId, accountId);
 
@@ -104,12 +110,12 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    public void syncGroupInstances() {
+    public void syncGroup() {
 
     }
 
     @Override
-    protected void internalSyncGroupInstances() {
+    protected void syncGroupInstances() {
 
     }
 
@@ -193,7 +199,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     @Override
     protected PendingExecutorsCounts getPendingExecutors(ProvisionRequest request) {
         PendingExecutorsCounts retVal              = new PendingExecutorsCounts();
-        int                    pendingExecutors    = 0;
+        Integer                pendingExecutors    = 0;
         Integer                initiatingExecutors = 0;
 
         if (pendingInstances.size() > 0) {
@@ -291,7 +297,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     private Boolean isSlaveExistForInstance(AzureGroupInstance instance) {
-        boolean retVal = false;
+        Boolean retVal = false;
 
         Node node = Jenkins.getInstance().getNode(instance.getInstanceId());
 

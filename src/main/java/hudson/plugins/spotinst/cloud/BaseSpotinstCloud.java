@@ -5,6 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
+import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
 import hudson.slaves.*;
@@ -57,6 +58,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   SpotGlobalExecutorOverride        globalExecutorOverride;
     protected Integer                           pendingThreshold;
     private   GroupLockingManager               groupLockingManager;
+    private   boolean                           isStatefulGroup;
     //endregion
 
     //region Constructor
@@ -133,6 +135,16 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         groupLockingManager = new GroupLockingManager(groupId, accountId);
         groupLockingManager.syncGroupController();
+
+        BlResponse<Boolean> checkIsStatefulGroupResponse = checkIsStatefulGroup();
+
+        if (checkIsStatefulGroupResponse.isSucceed()) {
+            this.isStatefulGroup = checkIsStatefulGroupResponse.getResult();
+        }
+        else {
+            LOGGER.warn("failed to get the group's details, currently referring to it as stateless");
+            this.isStatefulGroup = false;
+        }
     }
     //endregion
 
@@ -894,11 +906,19 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     public Boolean removeInstance(String instanceId) {
         boolean retVal;
-        String  statefulInstanceId = getStatefulInstanceId(instanceId);
-        boolean isStateful         = statefulInstanceId != null;
 
-        if (isStateful) {
-            retVal = deallocateInstance(statefulInstanceId);
+        if (isStatefulGroup()) {
+            String statefulInstanceId = getSsiId(instanceId);
+
+            if (statefulInstanceId != null) {
+                retVal = deallocateInstance(statefulInstanceId);
+            }
+            else {
+                LOGGER.warn(
+                        "Instance '{}' is not in the group's stateful instances, and currently cannot be deallocated",
+                        instanceId);
+                retVal = false;
+            }
         }
         else {
             retVal = detachInstance(instanceId);
@@ -907,26 +927,38 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return retVal;
     }
 
-    protected abstract String getStatefulInstanceId(String instanceId);
+    protected abstract BlResponse<Boolean> checkIsStatefulGroup();
+
+    public Boolean isStatefulGroup() {
+        return isStatefulGroup;
+    }
+
+    protected abstract String getSsiId(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 
-    protected abstract Boolean deallocateInstance(String instanceId);
+    protected abstract Boolean deallocateInstance(String statefulInstanceId);
 
     public abstract String getCloudUrl();
 
-    public void syncGroupInstances() {
+    public void syncGroup() {
         boolean isCloudReadyForGroupCommunication = isCloudReadyForGroupCommunication();
 
         if (isCloudReadyForGroupCommunication) {
-            internalSyncGroupInstances();
+            BlResponse<Boolean> isStatefulResponse = checkIsStatefulGroup();
+
+            if (isStatefulResponse.isSucceed()) {
+                this.isStatefulGroup = isStatefulResponse.getResult();
+            }
+
+            syncGroupInstances();
         }
         else {
             LOGGER.error(SKIPPED_METHOD_GROUP_IS_NIT_READY_ERROR_LOGGER_FORMAT, "syncGroupInstances", groupId);
         }
     }
 
-    protected abstract void internalSyncGroupInstances();
+    protected abstract void syncGroupInstances();
 
     public abstract Map<String, String> getInstanceIpsById();
 
