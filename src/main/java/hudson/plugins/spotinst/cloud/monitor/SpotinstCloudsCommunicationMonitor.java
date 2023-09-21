@@ -13,18 +13,24 @@ import java.util.stream.Collectors;
 
 @Extension
 public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
+    /*
+    Referenced from jelly file SpotinstCloudsCommunicationMonitor/message.jelly
+    that file needed for jenkins alert page (bell and errors/warnings), for example alerts of groups that failed to
+    communicate with Jenkins
+     */
 
     //region Members
-    private static List<GroupLockingManager> groupLockingManagers;
-    private        List<String>              spotinstCloudsCommunicationFailures;
-    private        List<String>              spotinstCloudsCommunicationInitializing;
+    private List<GroupLockingManager> groupLockingManagers;
+    private List<String>              groupCommunicationFailureDescriptions;
+    private List<String>              initializingGroupIds;
     //endregion
 
     //region Overridden Public Methods
     @Override
     public boolean isActivated() {
+        //called by jenkins first, before jelly calls the getters.
         initMonitor();
-        return isSpotinstCloudsCommunicationFailuresExist() || isSpotinstCloudsCommunicationInitializingExist();
+        return isGroupCommunicationFailureDescriptionsExist() || isInitializingGroupIdsExist();
     }
 
     @Override
@@ -34,49 +40,48 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
     //endregion
 
     //region methods
-    public boolean isSpotinstCloudsCommunicationFailuresExist() {
-        return CollectionUtils.isNotEmpty(spotinstCloudsCommunicationFailures);
+    public boolean isGroupCommunicationFailureDescriptionsExist() {
+        return CollectionUtils.isNotEmpty(groupCommunicationFailureDescriptions);
     }
 
-    public boolean isSpotinstCloudsCommunicationInitializingExist() {
-        return CollectionUtils.isNotEmpty(spotinstCloudsCommunicationInitializing);
+    public boolean isInitializingGroupIdsExist() {
+        return CollectionUtils.isNotEmpty(initializingGroupIds);
     }
     //endregion
 
     //region private methods
-    private void initMonitor(){
+    private void initMonitor() {
         groupLockingManagers = getGroupLockingManagers();
-        initSpotinstCloudsCommunicationInitializing();
-        initSpotinstCloudsCommunicationFailures();
+        initInitializingGroupIds();
+        initGroupCommunicationFailureDescriptions();
     }
 
-    private void initSpotinstCloudsCommunicationFailures() {
+    private void initGroupCommunicationFailureDescriptions() {
         if (groupLockingManagers != null) {
-            spotinstCloudsCommunicationFailures = groupLockingManagers.stream().filter(group ->
-                                                                                               group.getCloudCommunicationState() ==
-                                                                                               SpotinstCloudCommunicationState.FAILED)
-                                                                      .map(GroupLockingManager::getErrorDescription)
-                                                                      .collect(Collectors.toList());
+            groupCommunicationFailureDescriptions = groupLockingManagers.stream().filter(group ->
+                                                                                                 group.getCloudCommunicationState() ==
+                                                                                                 SpotinstCloudCommunicationState.FAILED)
+                                                                        .map(GroupLockingManager::getErrorDescription)
+                                                                        .collect(Collectors.toList());
         }
         else {
-            spotinstCloudsCommunicationFailures = Collections.emptyList();
+            groupCommunicationFailureDescriptions = Collections.emptyList();
         }
     }
 
-    private void initSpotinstCloudsCommunicationInitializing() {
+    private void initInitializingGroupIds() {
         if (groupLockingManagers != null) {
-            spotinstCloudsCommunicationInitializing = groupLockingManagers.stream().filter(group ->
-                                                                                                   group.getCloudCommunicationState() ==
-                                                                                                   SpotinstCloudCommunicationState.INITIALIZING)
-                                                                          .map(GroupLockingManager::getGroupId)
-                                                                          .collect(Collectors.toList());
+            initializingGroupIds = groupLockingManagers.stream().filter(group -> group.getCloudCommunicationState() ==
+                                                                                 SpotinstCloudCommunicationState.INITIALIZING)
+                                                       .map(GroupLockingManager::getGroupId)
+                                                       .collect(Collectors.toList());
         }
         else {
-            spotinstCloudsCommunicationInitializing = Collections.emptyList();
+            initializingGroupIds = Collections.emptyList();
         }
     }
 
-    private static List<GroupLockingManager> getGroupLockingManagers() {
+    private List<GroupLockingManager> getGroupLockingManagers() {
         List<GroupLockingManager> retVal  = null;
         Jenkins                   jenkins = Jenkins.getInstanceOrNull();
 
@@ -91,12 +96,12 @@ public class SpotinstCloudsCommunicationMonitor extends AdministrativeMonitor {
     //endregion
 
     //region getters & setters
-    public List<String> getSpotinstCloudsCommunicationFailures() {
-        return spotinstCloudsCommunicationFailures;
+    public List<String> getGroupCommunicationFailureDescriptions() {
+        return groupCommunicationFailureDescriptions;
     }
 
-    public String getSpotinstCloudsCommunicationInitializing() {
-        return String.join(", ", spotinstCloudsCommunicationInitializing);
+    public String getInitializingGroupIds() {
+        return String.join(", ", initializingGroupIds);
     }
     //endregion
 }
