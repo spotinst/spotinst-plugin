@@ -8,6 +8,7 @@ import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureGroupInstance;
 import hudson.plugins.spotinst.model.azure.AzureScaleSetSizeEnum;
+import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.repos.IAzureGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
@@ -39,14 +40,14 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AzureSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                               SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                              Boolean shouldRetriggerBuilds, String vmargs,
+                              SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
                               EnvironmentVariablesNodeProperty environmentVariables,
                               ToolLocationNodeProperty toolLocations, String accountId,
                               ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                               Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                               Integer pendingThreshold) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
@@ -82,7 +83,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected String getSsiId(String instanceId) {
+    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
         return null;//TODO: implement
     }
 

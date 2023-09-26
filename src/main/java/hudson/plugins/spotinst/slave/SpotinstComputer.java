@@ -4,7 +4,7 @@ import hudson.model.Executor;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
-import hudson.plugins.spotinst.model.aws.AwsStatefulInstancesManager;
+import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
 import hudson.slaves.SlaveComputer;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpRedirect;
@@ -54,7 +54,7 @@ public class SpotinstComputer extends SlaveComputer {
                     if (StringUtils.isNotEmpty(spotinstNodeSsiId)) {
                         LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
                                     spotinstNodeSsiId);
-                        AwsStatefulInstancesManager.putSsiByTask(task, executor, spotinstNodeSsiId);
+                        StatefulInstanceManager.putSsiByTask(task, executor, spotinstNodeSsiId);
                     }
                     else {
                         LOGGER.info("task {} accepted on a stateless slave {}. no restrictions occur", task.getName(),
@@ -91,11 +91,11 @@ public class SpotinstComputer extends SlaveComputer {
                     if (isStatefulNode) {
                         LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
                                     spotinstNodeSsiId);
-                        String attachedSsi = AwsStatefulInstancesManager.removeSsiByTask(task, executor);
+                        String attachedSsi = StatefulInstanceManager.removeSsiByTask(task, executor);
                         boolean isTaskReTriggered = StringUtils.isEmpty(attachedSsi);
 
                         if (isTaskReTriggered) {
-                            AwsStatefulInstancesManager.handleReTriggeredStatefulTask(task, executor);
+                            StatefulInstanceManager.handleReTriggeredStatefulTask(task, executor);
                         }
                         else {
                             LOGGER.info("unbinding stateful task {} and executor {} from ssi {}", task.getName(),

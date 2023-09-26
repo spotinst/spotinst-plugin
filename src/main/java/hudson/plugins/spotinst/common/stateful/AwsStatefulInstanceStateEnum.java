@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by sitay on 30/08/23.
  */
-public enum StatefulInstanceStateEnum {
+public enum AwsStatefulInstanceStateEnum {
     //region Enums
     ACTIVE("ACTIVE"),
     PAUSE("PAUSE"),
@@ -23,12 +23,12 @@ public enum StatefulInstanceStateEnum {
     //endregion
 
     //region Members
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatefulInstanceStateEnum.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AwsStatefulInstanceStateEnum.class);
     private final        String name;
     //endregion
 
     //region Constructors
-    StatefulInstanceStateEnum(String name) {
+    AwsStatefulInstanceStateEnum(String name) {
         this.name = name;
     }
     //endregion
@@ -40,10 +40,10 @@ public enum StatefulInstanceStateEnum {
     //endregion
 
     //region Methods
-    public static StatefulInstanceStateEnum fromName(String name) {
-        StatefulInstanceStateEnum retVal = null;
+    public static AwsStatefulInstanceStateEnum fromName(String name) {
+        AwsStatefulInstanceStateEnum retVal = null;
 
-        for (StatefulInstanceStateEnum deploymentInstanceStatus : StatefulInstanceStateEnum.values()) {
+        for (AwsStatefulInstanceStateEnum deploymentInstanceStatus : AwsStatefulInstanceStateEnum.values()) {
             if (name.equalsIgnoreCase(deploymentInstanceStatus.name)) {
                 retVal = deploymentInstanceStatus;
                 break;

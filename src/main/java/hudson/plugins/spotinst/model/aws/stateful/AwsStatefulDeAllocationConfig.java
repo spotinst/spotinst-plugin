@@ -1,4 +1,4 @@
-package hudson.plugins.spotinst.model.aws;
+package hudson.plugins.spotinst.model.aws.stateful;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * Created by sitay on 30/08/23.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwsStatefulDeallocationConfig {
+public class AwsStatefulDeAllocationConfig {
     //region members
     private Boolean shouldDeleteImages;
     private Boolean shouldDeleteNetworkInterfaces;

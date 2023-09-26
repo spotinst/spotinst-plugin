@@ -42,6 +42,9 @@ public class SpotinstCloudTest {
         IAzureGroupRepo   azureGroupRepo   = Mockito.mock(IAzureGroupRepo.class);
         IAzureVmGroupRepo azureVmGroupRepo = Mockito.mock(IAzureVmGroupRepo.class);
 
+        Mockito.when(awsGroupRepo.getGroup(Mockito.anyString(), Mockito.anyString()))
+               .thenReturn(new ApiResponse<>(false));
+
         RepoManager.getInstance().setAwsGroupRepo(awsGroupRepo);
         RepoManager.getInstance().setGcpGroupRepo(gcpGroupRepo);
         RepoManager.getInstance().setAzureGroupRepo(azureGroupRepo);
@@ -87,8 +90,9 @@ public class SpotinstCloudTest {
     public void testAwsProvision_whenThereArePendingInsatcnesForAllExecutors_thenShouldNotSacleUp() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false, new SpotReTriggerBuilds(true, false), "", null,
-                                     null, null, null, null, null, null, null);
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false,
+                                     new SpotReTriggerBuilds(true, false), "", null, null, null, null, null, null, null,
+                                     null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sir-1", buildPendingInstance("sir-1", 2));
         spotinstCloud.setPendingInstances(pendingInstances);
@@ -102,8 +106,9 @@ public class SpotinstCloudTest {
         String groupId   = "sig-1";
         String accountId = "act-111";
         AwsSpotinstCloud spotinstCloud =
-                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false, new SpotReTriggerBuilds(true, false), "", null,
-                                     null, accountId, null, null, null, null, null);
+                new AwsSpotinstCloud(groupId, "", "20", "/tmp", null, SlaveUsageEnum.NORMAL, "", false,
+                                     new SpotReTriggerBuilds(true, false), "", null, null, accountId, null, null, null,
+                                     null, null);
 
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
@@ -300,8 +305,8 @@ public class SpotinstCloudTest {
     public void testGcpProvision_whenThereArePendingInsatcnesForAllExecutors_thenShouldNotSacleUp() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, null, null, null,
-                                     null, null, null);
+                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false),
+                                     "", null, null, null, null, null, null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sin-1", buildPendingInstance("sin-1", 2));
         spotinstCloud.setPendingInstances(pendingInstances);
@@ -315,8 +320,8 @@ public class SpotinstCloudTest {
         String groupId   = "sig-1";
         String accountId = "act-111";
         GcpSpotinstCloud spotinstCloud =
-                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, accountId, null,
-                                     null, null, null, null);
+                new GcpSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false),
+                                     "", null, null, accountId, null, null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("sin-1", buildPendingInstance("sin-1", 2));
@@ -348,9 +353,9 @@ public class SpotinstCloudTest {
     @Test
     public void testAzureProvision_whenThereArePendingInsatcnesForAllExecutors_thenShouldNotSacleUp() {
         String groupId = "sig-1";
-        BaseSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(false, false), "", null, null, null, null,
-                                       null, null, null, null);
+        BaseSpotinstCloud spotinstCloud = new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false,
+                                                                 new SpotReTriggerBuilds(false, false), "", null, null,
+                                                                 null, null, null, null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("q3213", buildPendingInstance(groupId, 1));
         pendingInstances.put("41234", buildPendingInstance(groupId, 1));
@@ -364,9 +369,9 @@ public class SpotinstCloudTest {
     public void testAzureProvision_whenThereArePendingInsatcnesForPartOfTheExecutors_thenShouldSacleUpTheRest() {
         String groupId   = "sig-1";
         String accountId = "act-111";
-        AzureSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(false, false), "", null, null, accountId,
-                                       null, null, null, null, null);
+        AzureSpotinstCloud spotinstCloud = new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false,
+                                                                  new SpotReTriggerBuilds(false, false), "", null, null,
+                                                                  accountId, null, null, null, null, null);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("asda", buildPendingInstance(groupId, 1));
         pendingInstances.put("ada", buildPendingInstance(groupId, 1));
@@ -393,8 +398,8 @@ public class SpotinstCloudTest {
     public void testAzureV3Provision_whenThereArePendingInstancesForAllExecutors_thenShouldNotScaleUp() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, null, null, null,
-                                   null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "",
+                                   null, null, null, null, null, null, null, null);
 
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", 2));
@@ -410,8 +415,8 @@ public class SpotinstCloudTest {
         String groupId   = "sig-1";
         String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, accountId, null,
-                                   null, null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "",
+                                   null, null, accountId, null, null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", 2));
@@ -445,8 +450,8 @@ public class SpotinstCloudTest {
         String groupId   = "sig-1";
         String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, accountId, null,
-                                   null, null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "",
+                                   null, null, accountId, null, null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         AzureScaleUpResultNewVm newSpot = new AzureScaleUpResultNewVm();
         newSpot.setVmName("vm-2");
@@ -472,8 +477,8 @@ public class SpotinstCloudTest {
         String groupId   = "sig-1";
         String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, accountId, null,
-                                   null, null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "",
+                                   null, null, accountId, null, null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         AzureVmSizeEnum vmSizeBasicA1 = AzureVmSizeEnum.BASIC_A1;
         AzureVmSizeEnum vmSizeBasicA2 = AzureVmSizeEnum.BASIC_A2;
@@ -509,8 +514,8 @@ public class SpotinstCloudTest {
         String groupId   = "sig-1";
         String accountId = "act-111";
         BaseSpotinstCloud spotinstCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, accountId, null,
-                                   null, null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "",
+                                   null, null, accountId, null, null, null, null, null);
         jenkinsRule.jenkins.clouds.add(spotinstCloud);
         Map<String, PendingInstance> pendingInstances = new HashMap<>();
         pendingInstances.put("vm-1", buildPendingInstance("vm-1", 2));
@@ -548,8 +553,8 @@ public class SpotinstCloudTest {
     public void testAzureV3Cloud_whenNoConnectionMethodIsProvided_thenDefaultIsJNLP() {
         String groupId = "sig-1";
         BaseSpotinstCloud spotCloud =
-                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "", null, null, null, null, null,
-                                   null, null, null);
+                new AzureSpotCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(true, false), "",
+                                   null, null, null, null, null, null, null, null);
 
         jenkinsRule.jenkins.clouds.add(spotCloud);
         assertEquals(spotCloud.getConnectionMethod(), ConnectionMethodEnum.JNLP);
@@ -1275,8 +1280,8 @@ public class SpotinstCloudTest {
         Mockito.when(
                        RepoManager.getInstance().getAwsGroupRepo().getGroupInstances(Mockito.anyString(), Mockito.anyString()))
                .thenReturn(new ApiResponse<>(result));
-        Mockito.when(
-                       RepoManager.getInstance().getAwsGroupRepo().getStatefulInstances(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(RepoManager.getInstance().getAwsGroupRepo()
+                                .getStatefulInstances(Mockito.anyString(), Mockito.anyString()))
                .thenReturn(new ApiResponse<>(new LinkedList<>()));
 
         List<AwsScaleResultNewSpot> spots         = Collections.singletonList(newSpot);
@@ -1313,9 +1318,9 @@ public class SpotinstCloudTest {
     public void testAzureSpotinstCloud_DescriptorReturnsAzureSpotinstCloudString() {
         String groupId   = "sig-1";
         String accountId = "act-111";
-        BaseSpotinstCloud spotinstCloud =
-                new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false, new SpotReTriggerBuilds(false, false), "", null, null, accountId,
-                                       null, null, null, null, null);
+        BaseSpotinstCloud spotinstCloud = new AzureSpotinstCloud(groupId, "", "20", "/tmp", null, "", false,
+                                                                 new SpotReTriggerBuilds(false, false), "", null, null,
+                                                                 accountId, null, null, null, null, null);
 
         assertTrue(spotinstCloud.getDescriptor().toString().contains("AzureSpotinstCloud"));
     }

@@ -5,6 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
+import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
@@ -510,7 +511,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         pendingInstances.put(id, pendingInstance);
     }
 
-    protected SpotinstSlave buildSpotinstSlave(String id, String instanceType, String ssiId, String numOfExecutors) {
+    protected SpotinstSlave buildSpotinstSlave(String id, String instanceType, String numOfExecutors) {
         SpotinstSlave slave = null;
         Node.Mode     mode  = Node.Mode.NORMAL;
 
@@ -519,6 +520,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
 
         List<NodeProperty<?>> nodeProperties = buildNodeProperties();
+        String ssiId = getSsiId(id);
 
         try {
             ComputerLauncher launcher = buildLauncherForAgent(id);
@@ -532,10 +534,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
 
         return slave;
-    }
-
-    protected SpotinstSlave buildSpotinstSlave(String id, String instanceType, String numOfExecutors) {
-        return buildSpotinstSlave(id, instanceType, null, numOfExecutors);
     }
 
     private ComputerLauncher buildLauncherForAgent(String instanceId) throws IOException {
@@ -763,6 +761,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public SpotReTriggerBuilds getSpotReTriggerBuilds() {
+        if(spotReTriggerBuilds == null){
+            spotReTriggerBuilds = new SpotReTriggerBuilds(false, false);
+        }
+
         return spotReTriggerBuilds;
     }
 
@@ -771,27 +773,14 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public Boolean getShouldReTriggerBuilds() {
-        Boolean retVal;
-
-        if(getSpotReTriggerBuilds() == null){
-            retVal = null;
-        }
-        else{
-            retVal = getSpotReTriggerBuilds().getShouldReTriggerBuilds();
-        }
-
-        return retVal;
+        return getSpotReTriggerBuilds().getShouldReTriggerBuilds();
     }
 
     public void setShouldReTriggerBuilds(Boolean shouldReTriggerBuilds) {
-        this.getSpotReTriggerBuilds().setShouldReTriggerBuilds(shouldReTriggerBuilds);
+        getSpotReTriggerBuilds().setShouldReTriggerBuilds(shouldReTriggerBuilds);
     }
 
     public Boolean getStickyNode() {
-        if(getSpotReTriggerBuilds() == null){
-            return false;
-        }
-
         return getSpotReTriggerBuilds().getStickyNode();
     }
 
@@ -933,7 +922,18 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return isStatefulGroup;
     }
 
-    protected abstract String getSsiId(String instanceId);
+    public String getSsiId(String instanceId){
+        String retVal = null;
+        BaseStatefulInstance statefulInstance = getStatefulInstance(instanceId);
+
+        if(statefulInstance != null){
+            retVal = statefulInstance.getId();
+        }
+
+        return retVal;
+    }
+
+    protected abstract BaseStatefulInstance getStatefulInstance(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 

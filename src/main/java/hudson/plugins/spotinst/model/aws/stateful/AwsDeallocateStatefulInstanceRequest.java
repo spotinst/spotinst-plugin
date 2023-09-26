@@ -8,16 +8,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AwsDeallocateStatefulInstanceRequest {
     //region members
-    private AwsStatefulDeallocationConfig statefulDeallocation;
+    private AwsStatefulDeAllocationConfig statefulDeAllocationConfig;
     //endregion
 
     //region getters & setters
-    public AwsStatefulDeallocationConfig getStatefulDeallocation() {
-        return statefulDeallocation;
+    public AwsStatefulDeAllocationConfig getStatefulDeAllocationConfig() {
+        return statefulDeAllocationConfig;
     }
 
-    public void setStatefulDeallocation(AwsStatefulDeallocationConfig statefulDeallocation) {
-        this.statefulDeallocation = statefulDeallocation;
+    public void setStatefulDeAllocationConfig(AwsStatefulDeAllocationConfig statefulDeAllocationConfig) {
+        this.statefulDeAllocationConfig = statefulDeAllocationConfig;
     }
     //endregion
 }

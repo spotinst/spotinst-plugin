@@ -3,7 +3,7 @@ package hudson.plugins.spotinst.slave;
 import hudson.model.*;
 import hudson.model.Queue;
 import hudson.model.queue.SubTask;
-import hudson.plugins.spotinst.model.aws.AwsStatefulInstancesManager;
+import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
 import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.slaves.SlaveComputer;
 import org.apache.commons.lang.BooleanUtils;
@@ -56,10 +56,10 @@ class SpotLauncherHelper {
 
 
                         synchronized (lock) {
-                            String ssiByTaskName = AwsStatefulInstancesManager.removeSsiByTask(task, executor);
+                            String ssiByTaskName = StatefulInstanceManager.removeSsiByTask(task, executor);
 
                             if (ssiByTaskName != null) {
-                                AwsStatefulInstancesManager.handleReTriggeringStatefulTask(task, executor);
+                                StatefulInstanceManager.handleReTriggeringStatefulTask(task, executor);
                                 StatefulInterruptedTask statefulInterruptedTask =
                                         new StatefulInterruptedTask(ssiByTaskName, task);
                                 LOGGER.info(String.format("RETRIGGERING Stateful Task: %s - WITH ACTIONS: %s on SSI %s",
@@ -68,7 +68,7 @@ class SpotLauncherHelper {
                                 Queue.getInstance().schedule2(statefulInterruptedTask, 10, actions);
                             }
                             else {
-                                if (AwsStatefulInstancesManager.isReTriggeringStatefulTask(task, executor)) {
+                                if (StatefulInstanceManager.isReTriggeringStatefulTask(task, executor)) {
                                     LOGGER.info(String.format(
                                             "Stateful Task : %s is already queued for re-triggering - ignoring it",
                                             task));

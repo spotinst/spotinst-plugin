@@ -4,10 +4,6 @@ import hudson.Extension;
 import hudson.model.*;
 import hudson.model.queue.CauseOfBlockage;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
-import hudson.plugins.spotinst.common.StatefulInstanceStateEnum;
-import hudson.plugins.spotinst.model.aws.AwsStatefulInstance;
-import hudson.plugins.spotinst.model.aws.AwsStatefulInstancesManager;
-import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.slaves.*;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -187,56 +183,59 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
         return this;
     }
 
-    @Override
-    public CauseOfBlockage canTake(Queue.BuildableItem item){
-        CauseOfBlockage retVal                         = super.canTake(item);
-
-        if(retVal == null) {
-            LOGGER.info("can node {} take item {}", this, item);//TODO: remove
-            Queue.Task task                           = item.task;
-            boolean    isTaskReservedForStatefulSlave = task instanceof StatefulInterruptedTask;
-
-            if (isTaskReservedForStatefulSlave) {
-                StatefulInterruptedTask statefulInterruptedTask = (StatefulInterruptedTask) task;
-                String                  statefulTaskSsi         = statefulInterruptedTask.getSsi();
-                AwsStatefulInstance matchingStatefulInstance = AwsStatefulInstancesManager.getStatefulInstanceBySSi(statefulTaskSsi);
-                boolean isSsiExist = matchingStatefulInstance != null;
-
-                if (isSsiExist) {
-                    StatefulInstanceStateEnum ssiState = matchingStatefulInstance.getState();
-
-                    switch (ssiState) {
-                        case PAUSE:
-                        case PAUSING:
-                        case PAUSED:
-                        case DEALLOCATE:
-                        case DEALLOCATING:
-                        case DEALLOCATED:
-                        case ERROR:
-                            LOGGER.info("SSI {} is in state {} and isn't activated, task {} can run on any node",
-                                        statefulTaskSsi, ssiState, task.getName());
-                            break;
-
-                        case ACTIVE:
-                            retVal = checkMatchingSsis(statefulTaskSsi);
-                            break;
-
-                        case RECYCLE:
-                        case RECYCLING:
-                        case RESUME:
-                        case RESUMING:
-                        default:
-                            LOGGER.info("task {} awaits for SSI {} to be active. no node can take it", task.getName(),
-                                        statefulTaskSsi);
-                            retVal = new AwaitingSsiCauseOfBlockage();
-                            break;
-                    }
-                }
-            }
-        }
-
-        return retVal;
-    }
+//    @Override
+//    public CauseOfBlockage canTake(Queue.BuildableItem item){
+//        CauseOfBlockage retVal                         = super.canTake(item);
+//
+//        if(retVal == null) {
+//            LOGGER.info("can node {} take item {}", this, item);//TODO: remove
+//            Queue.Task task                           = item.task;
+//            boolean    isTaskReservedForStatefulSlave = task instanceof StatefulInterruptedTask;
+//
+//            if (isTaskReservedForStatefulSlave) {
+//                StatefulInterruptedTask statefulInterruptedTask = (StatefulInterruptedTask) task;
+//                String                  statefulTaskSsi         = statefulInterruptedTask.getSsi();
+//                BaseSpotinstCloud slaveSpotinstCloud = this.getSpotinstCloud();
+//                retVal = slaveSpotinstCloud.canTakeStatefulTask(this.getInstanceId(), statefulTaskSsi);
+//                AwsStatefulInstance
+//                        matchingStatefulInstance = AwsStatefulInstancesManager.getStatefulInstanceBySSi(statefulTaskSsi);
+//                boolean isSsiExist               = matchingStatefulInstance != null;
+//
+//                if (isSsiExist) {
+//                    AwsStatefulInstanceStateEnum ssiState = matchingStatefulInstance.getState();
+//
+//                    switch (ssiState) {
+//                        case PAUSE:
+//                        case PAUSING:
+//                        case PAUSED:
+//                        case DEALLOCATE:
+//                        case DEALLOCATING:
+//                        case DEALLOCATED:
+//                        case ERROR:
+//                            LOGGER.info("SSI {} is in state {} and isn't activated, task {} can run on any node",
+//                                        statefulTaskSsi, ssiState, task.getName());
+//                            break;
+//
+//                        case ACTIVE:
+//                            retVal = checkMatchingSsis(statefulTaskSsi);
+//                            break;
+//
+//                        case RECYCLE:
+//                        case RECYCLING:
+//                        case RESUME:
+//                        case RESUMING:
+//                        default:
+//                            LOGGER.info("task {} awaits for SSI {} to be active. no node can take it", task.getName(),
+//                                        statefulTaskSsi);
+//                            retVal = new AwaitingSsiCauseOfBlockage();
+//                            break;
+//                    }
+//                }
+//            }
+//        }
+//
+//        return retVal;
+//    }
 
     private CauseOfBlockage checkMatchingSsis(String statefulTaskSsi) {
         CauseOfBlockage retVal          = null;
