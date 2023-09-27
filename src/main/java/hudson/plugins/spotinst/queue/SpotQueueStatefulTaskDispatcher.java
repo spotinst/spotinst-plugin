@@ -26,7 +26,7 @@ public class SpotQueueStatefulTaskDispatcher extends QueueTaskDispatcher {
     @CheckForNull
     public CauseOfBlockage canTake(Node node, Queue.BuildableItem item) {
         CauseOfBlockage retVal = null;
-        LOGGER.info("can node {} take item {}", this, item);//TODO: remove
+        LOGGER.info("can node {} take item {}", node, item);//TODO: remove
         Queue.Task task                           = item.task;
         boolean    isTaskReservedForStatefulSlave = task instanceof StatefulInterruptedTask;
 
