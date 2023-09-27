@@ -85,22 +85,16 @@ public class SpotinstComputer extends SlaveComputer {
 
             if (spotinstCloud != null) {
                 if (spotinstCloud.getStickyNode()) {
-                    String spotinstNodeSsiId = spotinstNode.getSsiId();
-                    boolean isStatefulNode = StringUtils.isNotEmpty(spotinstNodeSsiId);
+                    String  spotinstNodeSsiId = spotinstNode.getSsiId();
+                    boolean isStatefulNode    = StringUtils.isNotEmpty(spotinstNodeSsiId);
 
                     if (isStatefulNode) {
                         LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
                                     spotinstNodeSsiId);
                         String attachedSsi = StatefulInstanceManager.removeSsiByTask(task, executor);
-                        boolean isTaskReTriggered = StringUtils.isEmpty(attachedSsi);
-
-                        if (isTaskReTriggered) {
-                            StatefulInstanceManager.handleReTriggeredStatefulTask(task, executor);
-                        }
-                        else {
-                            LOGGER.info("unbinding stateful task {} and executor {} from ssi {}", task.getName(),
-                                        executor.getId(), attachedSsi);
-                        }
+                        LOGGER.info("unbinding stateful task {} and executor {} from ssi {}", task.getName(),
+                                    executor.getId(), attachedSsi);
+                        StatefulInstanceManager.removeStatefulTaskByTask(task, executor);
                     }
                 }
             }

@@ -6,6 +6,7 @@ import hudson.model.Queue;
 import hudson.model.queue.CauseOfBlockage;
 import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
 import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
+import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.plugins.spotinst.slave.SpotinstSlave;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -22,8 +23,8 @@ public class StatefulInstanceManager {
             new ConcurrentHashMap<>();
     private static final Map<String, String>                               ssiByStatefulTask            =
             new ConcurrentHashMap<>();
-    private static final Set<String>                                       statefulTasksToReTrigger     =
-            new HashSet<>();
+    private static final Map<String, StatefulInterruptedTask>              statefulTaskByTask           =
+            new ConcurrentHashMap<>();
     //endregion
 
     //region methods
@@ -59,6 +60,13 @@ public class StatefulInstanceManager {
         return retVal;
     }
 
+    public static String getSsiByTask(Queue.Task task, Executor executor) {
+        String retVal;
+        String key = generateKey(task, executor);
+        retVal = ssiByStatefulTask.get(key);
+        return retVal;
+    }
+
     public static void putSsiByTask(Queue.Task task, Executor executor, String ssiId) {
         String key = generateKey(task, executor);
         ssiByStatefulTask.put(key, ssiId);
@@ -71,22 +79,23 @@ public class StatefulInstanceManager {
         return retVal;
     }
 
-
-    public static Boolean isReTriggeringStatefulTask(Queue.Task task, Executor executor) {
-        boolean retVal;
-        String  key = generateKey(task, executor);
-        retVal = statefulTasksToReTrigger.contains(key);
+    public static StatefulInterruptedTask getStatefulTaskByTask(Queue.Task task, Executor executor) {
+        StatefulInterruptedTask retVal;
+        String key = generateKey(task, executor);
+        retVal = statefulTaskByTask.get(key);
         return retVal;
     }
 
-    public static void handleReTriggeringStatefulTask(Queue.Task task, Executor executor) {
+    public static void putStatefulTaskByTask(Queue.Task task, Executor executor, StatefulInterruptedTask statefulTask) {
         String key = generateKey(task, executor);
-        statefulTasksToReTrigger.add(key);
+        statefulTaskByTask.put(key, statefulTask);
     }
 
-    public static void handleReTriggeredStatefulTask(Queue.Task task, Executor executor) {
-        String  key = generateKey(task, executor);
-        statefulTasksToReTrigger.remove(key);
+    public static StatefulInterruptedTask removeStatefulTaskByTask(Queue.Task task, Executor executor) {
+        StatefulInterruptedTask retVal;
+        String key = generateKey(task, executor);
+        retVal = statefulTaskByTask.remove(key);
+        return retVal;
     }
     //endregion
 

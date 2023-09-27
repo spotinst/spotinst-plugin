@@ -56,27 +56,24 @@ class SpotLauncherHelper {
 
 
                         synchronized (lock) {
-                            String ssiByTaskName = StatefulInstanceManager.removeSsiByTask(task, executor);
+                            String ssiByTaskName = StatefulInstanceManager.getSsiByTask(task, executor);
 
                             if (ssiByTaskName != null) {
-                                StatefulInstanceManager.handleReTriggeringStatefulTask(task, executor);
                                 StatefulInterruptedTask statefulInterruptedTask =
-                                        new StatefulInterruptedTask(ssiByTaskName, task);
+                                        StatefulInstanceManager.getStatefulTaskByTask(task, executor);
+
+                                if (statefulInterruptedTask == null) {
+                                    statefulInterruptedTask = new StatefulInterruptedTask(ssiByTaskName, task);
+                                    StatefulInstanceManager.putStatefulTaskByTask(task, executor, statefulInterruptedTask);
+                                }
+
                                 LOGGER.info(String.format("RETRIGGERING Stateful Task: %s - WITH ACTIONS: %s on SSI %s",
                                                           statefulInterruptedTask.getTask(), actions, ssiByTaskName));
-
                                 Queue.getInstance().schedule2(statefulInterruptedTask, 10, actions);
                             }
                             else {
-                                if (StatefulInstanceManager.isReTriggeringStatefulTask(task, executor)) {
-                                    LOGGER.info(String.format(
-                                            "Stateful Task : %s is already queued for re-triggering - ignoring it",
-                                            task));
-                                }
-                                else {
-                                    LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
-                                    Queue.getInstance().schedule2(task, 10, actions);
-                                }
+                                LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
+                                Queue.getInstance().schedule2(task, 10, actions);
                             }
                         }
                     }
