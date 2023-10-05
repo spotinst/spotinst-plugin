@@ -2,6 +2,7 @@ package hudson.plugins.spotinst.slave;
 
 import hudson.model.*;
 import hudson.model.Queue;
+import hudson.model.queue.ScheduleResult;
 import hudson.model.queue.SubTask;
 import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
 import hudson.slaves.SlaveComputer;
@@ -54,7 +55,8 @@ class SpotLauncherHelper {
                         }
 
                         synchronized (lock) {
-                            String ssiByTaskName = StatefulInstanceManager.getSsiByTask(task, executor);
+                            String         ssiByTaskName = StatefulInstanceManager.getSsiByTask(task, executor);
+                            ScheduleResult scheduleResult;
 
                             if (ssiByTaskName != null) {
                                 String statefulInterruptedTask =
@@ -68,12 +70,27 @@ class SpotLauncherHelper {
 
                                 LOGGER.info(String.format("RETRIGGERING Stateful Task: %s - WITH ACTIONS: %s on SSI %s",
                                                           statefulInterruptedTask, actions, ssiByTaskName));
-                                Queue.getInstance().schedule2(task, 10, actions);
+                                scheduleResult = Queue.getInstance().schedule2(task, 10, actions);
                             }
                             else {
                                 LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
-                                Queue.getInstance().schedule2(task, 10, actions);
+                                scheduleResult = Queue.getInstance().schedule2(task, 10, actions);
                             }
+
+                            if (scheduleResult.isRefused()) {
+                                LOGGER.info("task '{}' refused", task);
+                            }
+                            if (scheduleResult.isAccepted()) {
+                                LOGGER.info("task '{}' accepted", task);
+                            }
+                            if (scheduleResult.isCreated()) {
+                                LOGGER.info("task '{}' created", task);
+                            }
+
+                            Queue.Item item = scheduleResult.getItem(), createdItem = scheduleResult.getCreateItem();
+                            LOGGER.info("interrupted task : '{}'. item task '{}', created item task '{}'", task,
+                                        item == null ? null : item.task, createdItem == null ? null : createdItem.task);
+
                         }
                     }
                 }

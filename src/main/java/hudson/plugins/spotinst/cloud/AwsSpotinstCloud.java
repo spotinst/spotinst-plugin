@@ -324,7 +324,8 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
 
         if (statefulInstancesResponse.isRequestSucceed()) {
             List<AwsStatefulInstance> statefulInstances = statefulInstancesResponse.getValue();
-            this.ssiByInstanceId = statefulInstances.stream().collect(
+            this.ssiByInstanceId = statefulInstances.stream().filter(statefulInstance -> StringUtils.isNotEmpty(
+                    statefulInstance.getInstanceId())).collect(
                     Collectors.toMap(AwsStatefulInstance::getInstanceId, statefulInstance -> statefulInstance));
             StatefulInstanceManager.getStatefulInstanceIdsByGroupId().put(groupId, statefulInstances);
         }
