@@ -4,7 +4,6 @@ import hudson.model.*;
 import hudson.model.Queue;
 import hudson.model.queue.SubTask;
 import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
-import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.slaves.SlaveComputer;
 import org.apache.commons.lang.BooleanUtils;
 import org.slf4j.Logger;
@@ -54,22 +53,22 @@ class SpotLauncherHelper {
                             actions = ((Actionable) executable).getActions();
                         }
 
-
                         synchronized (lock) {
                             String ssiByTaskName = StatefulInstanceManager.getSsiByTask(task, executor);
 
                             if (ssiByTaskName != null) {
-                                StatefulInterruptedTask statefulInterruptedTask =
-                                        StatefulInstanceManager.getStatefulTaskByTask(task, executor);
+                                String statefulInterruptedTask =
+                                        StatefulInstanceManager.getReTriggeringStatefulTaskByTask(task);
 
                                 if (statefulInterruptedTask == null) {
-                                    statefulInterruptedTask = new StatefulInterruptedTask(ssiByTaskName, task);
-                                    StatefulInstanceManager.putStatefulTaskByTask(task, executor, statefulInterruptedTask);
+                                    statefulInterruptedTask = ssiByTaskName;
+                                    StatefulInstanceManager.handleReTriggeringStatefulTaskByTask(task,
+                                                                                                 statefulInterruptedTask);
                                 }
 
                                 LOGGER.info(String.format("RETRIGGERING Stateful Task: %s - WITH ACTIONS: %s on SSI %s",
-                                                          statefulInterruptedTask.getTask(), actions, ssiByTaskName));
-                                Queue.getInstance().schedule2(statefulInterruptedTask, 10, actions);
+                                                          statefulInterruptedTask, actions, ssiByTaskName));
+                                Queue.getInstance().schedule2(task, 10, actions);
                             }
                             else {
                                 LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));

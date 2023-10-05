@@ -94,7 +94,7 @@ public class SpotinstComputer extends SlaveComputer {
                         String attachedSsi = StatefulInstanceManager.removeSsiByTask(task, executor);
                         LOGGER.info("unbinding stateful task {} and executor {} from ssi {}", task.getName(),
                                     executor.getId(), attachedSsi);
-                        StatefulInstanceManager.removeStatefulTaskByTask(task, executor);
+                        StatefulInstanceManager.handleReTriggeredStatefulTaskByTask(task);
                     }
                 }
             }

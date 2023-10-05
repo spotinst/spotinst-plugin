@@ -25,15 +25,15 @@ public class SpotQueueStatefulTaskDispatcher extends QueueTaskDispatcher {
     @Override
     @CheckForNull
     public CauseOfBlockage canTake(Node node, Queue.BuildableItem item) {
-        CauseOfBlockage retVal = null;
-        LOGGER.info("can node {} take item {}", node, item);//TODO: remove
-        Queue.Task task                           = item.task;
-        boolean    isTaskReservedForStatefulSlave = task instanceof StatefulInterruptedTask;
+        CauseOfBlockage retVal                         = null;
+        Queue.Task      task                           = item.task;
+        String          ssiForReTriggeringTask         =
+                StatefulInstanceManager.getReTriggeringStatefulTaskByTask(task);
+        boolean         isTaskReservedForStatefulSlave = ssiForReTriggeringTask != null;
 
         if (isTaskReservedForStatefulSlave) {
-            StatefulInterruptedTask statefulInterruptedTask = (StatefulInterruptedTask) task;
-            String                  statefulTaskSsi         = statefulInterruptedTask.getSsi();
-            retVal = StatefulInstanceManager.canNodeTakeStatefulTask(node, statefulTaskSsi);
+            LOGGER.info("can node {} take item {}", node, item);//TODO: remove
+            retVal = StatefulInstanceManager.canNodeTakeStatefulTask(node, ssiForReTriggeringTask);
         }
 
         return retVal;

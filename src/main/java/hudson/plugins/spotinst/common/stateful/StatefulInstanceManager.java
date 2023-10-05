@@ -6,7 +6,6 @@ import hudson.model.Queue;
 import hudson.model.queue.CauseOfBlockage;
 import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
 import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
-import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.plugins.spotinst.slave.SpotinstSlave;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -17,13 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class StatefulInstanceManager {
     //region members
-    private static final Logger                                            LOGGER                       =
+    private static final Logger                                            LOGGER                         =
             LoggerFactory.getLogger(StatefulInstanceManager.class);
-    private static final Map<String, List<? extends BaseStatefulInstance>> statefulInstanceIdsByGroupId =
+    private static final Map<String, List<? extends BaseStatefulInstance>> statefulInstanceIdsByGroupId   =
             new ConcurrentHashMap<>();
-    private static final Map<String, String>                               ssiByStatefulTask            =
+    private static final Map<String, String>                               ssiByStatefulTask              =
             new ConcurrentHashMap<>();
-    private static final Map<String, StatefulInterruptedTask>              statefulTaskByTask           =
+    private static final Map<Queue.Task, String>                           reTriggeringStatefulTaskByTask =
             new ConcurrentHashMap<>();
     //endregion
 
@@ -31,10 +30,10 @@ public class StatefulInstanceManager {
     public static CauseOfBlockage canNodeTakeStatefulTask(Node node, String statefulTaskSsi) {
         CauseOfBlockage retVal = null;
         Optional<List<? extends BaseStatefulInstance>> optionalMatchingGroupStatefulInstances =
-                statefulInstanceIdsByGroupId.values().stream().filter(statefulInstances -> statefulInstances.stream()
-                                                                                                            .anyMatch(
-                                                                                                                    statefulInstance -> statefulInstance.getId()
-                                                                                                                                                        .equals(statefulTaskSsi)))
+                statefulInstanceIdsByGroupId.values().stream()
+                                            .filter(groupStatefulInstances -> groupStatefulInstances.stream().anyMatch(
+                                                    statefulInstance -> statefulInstance.getId()
+                                                                                        .equals(statefulTaskSsi)))
                                             .findFirst();
         boolean isStatefulInstanceExist = optionalMatchingGroupStatefulInstances.isPresent();
 
@@ -79,23 +78,16 @@ public class StatefulInstanceManager {
         return retVal;
     }
 
-    public static StatefulInterruptedTask getStatefulTaskByTask(Queue.Task task, Executor executor) {
-        StatefulInterruptedTask retVal;
-        String key = generateKey(task, executor);
-        retVal = statefulTaskByTask.get(key);
-        return retVal;
+    public static String getReTriggeringStatefulTaskByTask(Queue.Task task) {
+        return reTriggeringStatefulTaskByTask.get(task);
     }
 
-    public static void putStatefulTaskByTask(Queue.Task task, Executor executor, StatefulInterruptedTask statefulTask) {
-        String key = generateKey(task, executor);
-        statefulTaskByTask.put(key, statefulTask);
+    public static void handleReTriggeringStatefulTaskByTask(Queue.Task task, String ssi) {
+        reTriggeringStatefulTaskByTask.put(task, ssi);
     }
 
-    public static StatefulInterruptedTask removeStatefulTaskByTask(Queue.Task task, Executor executor) {
-        StatefulInterruptedTask retVal;
-        String key = generateKey(task, executor);
-        retVal = statefulTaskByTask.remove(key);
-        return retVal;
+    public static void handleReTriggeredStatefulTaskByTask(Queue.Task task) {
+        reTriggeringStatefulTaskByTask.remove(task);
     }
     //endregion
 
@@ -134,6 +126,8 @@ public class StatefulInstanceManager {
                     LOGGER.info("found slave for stateful task with SSI '{}'", statefulTaskSsi);
                 }
                 else {
+                    LOGGER.info("task is reserved for ssi '{}' and cannot be taken by node '{}'", statefulTaskSsi,
+                                node);//TODO: remove
                     retVal = new InconsistentSsiCauseOfBlockage();
                 }
 
