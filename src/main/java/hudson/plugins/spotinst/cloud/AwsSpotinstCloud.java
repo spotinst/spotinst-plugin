@@ -309,6 +309,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             this.ssiByInstanceId = statefulInstances.stream().filter(statefulInstance -> StringUtils.isNotEmpty(
                     statefulInstance.getInstanceId())).collect(
                     Collectors.toMap(AwsStatefulInstance::getInstanceId, statefulInstance -> statefulInstance));
+            LOGGER.info("found {} running stateful instances for group {}", ssiByInstanceId.size(), groupId);
         }
         else {
             LOGGER.error(String.format("Failed to get group %s stateful instances. Errors: %s", groupId,
