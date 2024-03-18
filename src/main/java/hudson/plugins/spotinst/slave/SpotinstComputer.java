@@ -4,7 +4,9 @@ import hudson.model.Executor;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
+import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
 import hudson.slaves.SlaveComputer;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpRedirect;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.HttpResponses;
@@ -41,8 +43,23 @@ public class SpotinstComputer extends SlaveComputer {
                     LOGGER.info(msg);
                     this.setAcceptingTasks(false);
                     SpotinstNonLocalizable spotinstNonLocalizable = new SpotinstNonLocalizable(msg);
-                    SpotinstSingleTaskOfflineCause spotinstSingleTaskOfflineCause = new SpotinstSingleTaskOfflineCause(spotinstNonLocalizable);
-                    this.setTemporarilyOffline(true,spotinstSingleTaskOfflineCause);
+                    SpotinstSingleTaskOfflineCause spotinstSingleTaskOfflineCause =
+                            new SpotinstSingleTaskOfflineCause(spotinstNonLocalizable);
+                    this.setTemporarilyOffline(true, spotinstSingleTaskOfflineCause);
+                }
+
+                if (spotinstCloud.getStickyNode()) {
+                    String spotinstNodeSsiId = spotinstNode.getSsiId();
+
+                    if (StringUtils.isNotEmpty(spotinstNodeSsiId)) {
+                        LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
+                                    spotinstNodeSsiId);
+                        StatefulInstanceManager.putSsiByTask(task, executor, spotinstNodeSsiId);
+                    }
+                    else {
+                        LOGGER.info("task {} accepted on a stateless slave {}. no restrictions occur", task.getName(),
+                                    spotinstNode.getNodeName());
+                    }
                 }
             }
             else {
@@ -50,12 +67,39 @@ public class SpotinstComputer extends SlaveComputer {
                         "Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode's SpotinstCloud appears to be null.",
                         spotinstNode.getNodeName()));
             }
-        } else {
+        }
+        else {
             LOGGER.error(String.format(
-                    "Executor of Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode is null.", executor.getOwner().getName()));
+                    "Executor of Node %s has accepted a job but can't determine 'Single Task Nodes' setting because SpotinstNode is null.",
+                    executor.getOwner().getName()));
         }
     }
 
+    @Override
+    public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
+        super.taskCompleted(executor, task, durationMS);
+        SpotinstSlave spotinstNode = this.getNode();
+
+        if (spotinstNode != null) {
+            BaseSpotinstCloud spotinstCloud = spotinstNode.getSpotinstCloud();
+
+            if (spotinstCloud != null) {
+                if (spotinstCloud.getStickyNode()) {
+                    String  spotinstNodeSsiId = spotinstNode.getSsiId();
+                    boolean isStatefulNode    = StringUtils.isNotEmpty(spotinstNodeSsiId);
+
+                    if (isStatefulNode) {
+                        LOGGER.info("task {} accepted on executor {} and is bound to ssi {}", task, executor.getId(),
+                                    spotinstNodeSsiId);
+                        String attachedSsi = StatefulInstanceManager.removeSsiByTask(task, executor);
+                        LOGGER.info("unbinding stateful task {} and executor {} from ssi {}", task.getName(),
+                                    executor.getId(), attachedSsi);
+                        StatefulInstanceManager.removeStatefulTaskByTask(task, executor);
+                    }
+                }
+            }
+        }
+    }
     //endregion
 
     //region Constructor
@@ -94,7 +138,8 @@ public class SpotinstComputer extends SlaveComputer {
             }
 
             return new HttpRedirect("..");
-        } catch (NullPointerException ex) {
+        }
+        catch (NullPointerException ex) {
             return HttpResponses.error(500, ex);
         }
     }
@@ -114,6 +159,5 @@ public class SpotinstComputer extends SlaveComputer {
             this.setNode(node);
         }
     }
-
     //endregion
 }

@@ -6,7 +6,7 @@ import hudson.plugins.spotinst.api.infra.*;
 import hudson.plugins.spotinst.common.SpotinstContext;
 import hudson.plugins.spotinst.model.aws.*;
 import hudson.plugins.spotinst.model.aws.stateful.AwsDeallocateStatefulInstanceRequest;
-import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulDeallocationConfig;
+import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulDeAllocationConfig;
 import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
 import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstancesResponse;
 import hudson.plugins.spotinst.model.azure.*;
@@ -177,12 +177,12 @@ public class SpotinstApi {
         Map<String, String> queryParams = buildQueryParams(accountId);
 
         AwsDeallocateStatefulInstanceRequest request              = new AwsDeallocateStatefulInstanceRequest();
-        AwsStatefulDeallocationConfig        statefulDeallocation = new AwsStatefulDeallocationConfig();
+        AwsStatefulDeAllocationConfig        statefulDeallocation = new AwsStatefulDeAllocationConfig();
         statefulDeallocation.setShouldDeleteImages(true);
         statefulDeallocation.setShouldDeleteSnapshots(true);
         statefulDeallocation.setShouldDeleteVolumes(true);
         statefulDeallocation.setShouldDeleteNetworkInterfaces(true);
-        request.setStatefulDeallocation(statefulDeallocation);
+        request.setStatefulDeAllocationConfig(statefulDeallocation);
 
         String body = JsonMapper.toJson(request);
 

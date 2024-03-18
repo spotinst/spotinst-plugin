@@ -9,6 +9,7 @@ import hudson.plugins.spotinst.common.Constants;
 import hudson.plugins.spotinst.model.azure.AzureGroupVm;
 import hudson.plugins.spotinst.model.azure.AzureScaleUpResultNewVm;
 import hudson.plugins.spotinst.model.azure.AzureVmSizeEnum;
+import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.repos.IAzureVmGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
@@ -41,13 +42,13 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AzureSpotCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                           SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                          Boolean shouldRetriggerBuilds, String vmargs,
+                          SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
                           EnvironmentVariablesNodeProperty environmentVariables, ToolLocationNodeProperty toolLocations,
                           String accountId, ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                           Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                           Integer pendingThreshold) {
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
@@ -92,7 +93,7 @@ public class AzureSpotCloud extends BaseSpotinstCloud {
     }
 
     @Override
-    protected String getSsiId(String instanceId) {
+    protected BaseStatefulInstance getStatefulInstance(String instanceId) {
         return null;//TODO: implement
     }
 

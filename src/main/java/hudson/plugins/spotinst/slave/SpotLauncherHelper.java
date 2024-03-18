@@ -1,29 +1,31 @@
 package hudson.plugins.spotinst.slave;
 
 import hudson.model.*;
+import hudson.model.Queue;
 import hudson.model.queue.SubTask;
+import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
+import hudson.plugins.spotinst.queue.StatefulInterruptedTask;
 import hudson.slaves.SlaveComputer;
 import org.apache.commons.lang.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 
 /**
- * Created by Shibel Karmi Mansour on 31/12/2020.
- *
+ * Created by Shibel Karmi Mansour on 31/12/2020.*
  * A helper class for handling common callbacks (like afterDisconnect) for different types of
  * ComputerLaunchers.
  */
 class SpotLauncherHelper {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(SpotLauncherHelper.class);
+    private static final Object lock   = new Object();
     //endregion
 
     //region Methods
-    static void handleDisconnect(final SlaveComputer computer, Boolean shouldRetriggerBuilds){
+    static void handleDisconnect(final SlaveComputer computer, Boolean shouldRetriggerBuilds) {
 
         shouldRetriggerBuilds = resolveShouldRetriggerBuilds(shouldRetriggerBuilds);
 
@@ -31,7 +33,6 @@ class SpotLauncherHelper {
         if (computer != null && computer.isOffline() && computer instanceof SpotinstComputer) {
             SpotinstComputer spotinstComputer = (SpotinstComputer) computer;
             SpotinstSlave    slave            = spotinstComputer.getNode();
-
 
             if (shouldRetriggerBuilds && (slave == null || BooleanUtils.isFalse(slave.isSlavePending()))) {
                 LOGGER.info(String.format("Start retriggering executors for %s", spotinstComputer.getDisplayName()));
@@ -53,9 +54,28 @@ class SpotLauncherHelper {
                             actions = ((Actionable) executable).getActions();
                         }
 
-                        LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
 
-                        Queue.getInstance().schedule2(task, 10, actions);
+                        synchronized (lock) {
+                            String ssiByTaskName = StatefulInstanceManager.getSsiByTask(task, executor);
+
+                            if (ssiByTaskName != null) {
+                                StatefulInterruptedTask statefulInterruptedTask =
+                                        StatefulInstanceManager.getStatefulTaskByTask(task, executor);
+
+                                if (statefulInterruptedTask == null) {
+                                    statefulInterruptedTask = new StatefulInterruptedTask(ssiByTaskName, task);
+                                    StatefulInstanceManager.putStatefulTaskByTask(task, executor, statefulInterruptedTask);
+                                }
+
+                                LOGGER.info(String.format("RETRIGGERING Stateful Task: %s - WITH ACTIONS: %s on SSI %s",
+                                                          statefulInterruptedTask.getTask(), actions, ssiByTaskName));
+                                Queue.getInstance().schedule2(statefulInterruptedTask, 10, actions);
+                            }
+                            else {
+                                LOGGER.info(String.format("RETRIGGERING: %s - WITH ACTIONS: %s", task, actions));
+                                Queue.getInstance().schedule2(task, 10, actions);
+                            }
+                        }
                     }
                 }
 

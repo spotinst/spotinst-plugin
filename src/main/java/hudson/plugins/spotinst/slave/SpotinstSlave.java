@@ -2,10 +2,12 @@ package hudson.plugins.spotinst.slave;
 
 import hudson.Extension;
 import hudson.model.*;
+import hudson.model.queue.CauseOfBlockage;
 import hudson.plugins.spotinst.cloud.BaseSpotinstCloud;
 import hudson.slaves.*;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
     private String            instanceId;
     private String            instanceType;
+    private String            ssiId;
     private String            elastigroupId;
     private String            workspaceDir;
     private String            groupUrl;
@@ -34,9 +37,9 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     //endregion
 
     //region Constructor
-    public SpotinstSlave(String name, String elastigroupId, String instanceId, String instanceType, String label,
-                         String idleTerminationMinutes, String workspaceDir, String numOfExecutors, Mode mode,
-                         ComputerLauncher launcher,
+    public SpotinstSlave(String name, String elastigroupId, String instanceId, String instanceType, String ssiId,
+                         String label, String idleTerminationMinutes, String workspaceDir, String numOfExecutors,
+                         Mode mode, ComputerLauncher launcher,
                          List<NodeProperty<?>> nodeProperties) throws Descriptor.FormException, IOException {
 
 
@@ -45,6 +48,7 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
         this.elastigroupId = elastigroupId;
         this.instanceType = instanceType;
+        this.ssiId = ssiId;
         this.instanceId = instanceId;
         this.workspaceDir = workspaceDir;
         this.usage = SlaveUsageEnum.fromMode(mode);
@@ -64,6 +68,14 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
 
     public String getInstanceType() {
         return instanceType;
+    }
+
+    public String getSsiId() {
+        return ssiId;
+    }
+
+    public void setSsiId(String ssiId) {
+        this.ssiId = ssiId;
     }
 
     public String getWorkspaceDir() {
@@ -170,6 +182,85 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
     public Node asNode() {
         return this;
     }
+
+//    @Override
+//    public CauseOfBlockage canTake(Queue.BuildableItem item){
+//        CauseOfBlockage retVal                         = super.canTake(item);
+//
+//        if(retVal == null) {
+//            LOGGER.info("can node {} take item {}", this, item);//TODO: remove
+//            Queue.Task task                           = item.task;
+//            boolean    isTaskReservedForStatefulSlave = task instanceof StatefulInterruptedTask;
+//
+//            if (isTaskReservedForStatefulSlave) {
+//                StatefulInterruptedTask statefulInterruptedTask = (StatefulInterruptedTask) task;
+//                String                  statefulTaskSsi         = statefulInterruptedTask.getSsi();
+//                BaseSpotinstCloud slaveSpotinstCloud = this.getSpotinstCloud();
+//                retVal = slaveSpotinstCloud.canTakeStatefulTask(this.getInstanceId(), statefulTaskSsi);
+//                AwsStatefulInstance
+//                        matchingStatefulInstance = AwsStatefulInstancesManager.getStatefulInstanceBySSi(statefulTaskSsi);
+//                boolean isSsiExist               = matchingStatefulInstance != null;
+//
+//                if (isSsiExist) {
+//                    AwsStatefulInstanceStateEnum ssiState = matchingStatefulInstance.getState();
+//
+//                    switch (ssiState) {
+//                        case PAUSE:
+//                        case PAUSING:
+//                        case PAUSED:
+//                        case DEALLOCATE:
+//                        case DEALLOCATING:
+//                        case DEALLOCATED:
+//                        case ERROR:
+//                            LOGGER.info("SSI {} is in state {} and isn't activated, task {} can run on any node",
+//                                        statefulTaskSsi, ssiState, task.getName());
+//                            break;
+//
+//                        case ACTIVE:
+//                            retVal = checkMatchingSsis(statefulTaskSsi);
+//                            break;
+//
+//                        case RECYCLE:
+//                        case RECYCLING:
+//                        case RESUME:
+//                        case RESUMING:
+//                        default:
+//                            LOGGER.info("task {} awaits for SSI {} to be active. no node can take it", task.getName(),
+//                                        statefulTaskSsi);
+//                            retVal = new AwaitingSsiCauseOfBlockage();
+//                            break;
+//                    }
+//                }
+//            }
+//        }
+//
+//        return retVal;
+//    }
+
+    private CauseOfBlockage checkMatchingSsis(String statefulTaskSsi) {
+        CauseOfBlockage retVal          = null;
+        String          slaveSsi        = getSsiId();
+        boolean         isStatefulSlave = StringUtils.isNotEmpty(slaveSsi);
+
+        if (isStatefulSlave) {
+            boolean canNodeTakeTask = slaveSsi.equals(statefulTaskSsi);
+
+            if (canNodeTakeTask) {
+                LOGGER.info("node {} with ssi {} can take task", getNodeName(), slaveSsi);
+            }
+            else {
+                LOGGER.info("task reserved for stateful slave with SSI {} different from current slave's SSI {}",
+                            statefulTaskSsi, slaveSsi);
+                retVal = new InconsistentSsiCauseOfBlockage();
+            }
+        }
+        else {
+            LOGGER.info("task reserved for stateful slave with SSI {}. current slave is not a stateful", statefulTaskSsi);
+            retVal = new InconsistentSsiCauseOfBlockage();
+        }
+
+        return retVal;
+    }
     //endregion
 
     //region Public Methods
@@ -266,6 +357,20 @@ public class SpotinstSlave extends Slave implements EphemeralNode {
         @Override
         public boolean isInstantiable() {
             return false;
+        }
+    }
+
+    private static class InconsistentSsiCauseOfBlockage extends CauseOfBlockage {
+        @Override
+        public String getShortDescription() {
+            return "task reserved for slave with ssi different from current node";
+        }
+    }
+
+    private static class AwaitingSsiCauseOfBlockage extends CauseOfBlockage {
+        @Override
+        public String getShortDescription() {
+            return "awaiting for stateful node to recover";
         }
     }
     //endregion

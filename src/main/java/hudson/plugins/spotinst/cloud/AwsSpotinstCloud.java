@@ -6,7 +6,8 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.common.SpotAwsInstanceTypesHelper;
-import hudson.plugins.spotinst.common.stateful.StatefulInstanceStateEnum;
+import hudson.plugins.spotinst.common.stateful.AwsStatefulInstanceStateEnum;
+import hudson.plugins.spotinst.common.stateful.StatefulInstanceManager;
 import hudson.plugins.spotinst.model.aws.*;
 import hudson.plugins.spotinst.model.aws.stateful.AwsStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
@@ -47,15 +48,15 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     @DataBoundConstructor
     public AwsSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                             List<? extends SpotinstInstanceWeight> executorsForTypes, SlaveUsageEnum usage,
-                            String tunnel, Boolean shouldUseWebsocket, Boolean shouldRetriggerBuilds, String vmargs,
-                            EnvironmentVariablesNodeProperty environmentVariables,
+                            String tunnel, Boolean shouldUseWebsocket, SpotReTriggerBuilds spotReTriggerBuilds,
+                            String vmargs, EnvironmentVariablesNodeProperty environmentVariables,
                             ToolLocationNodeProperty toolLocations, String accountId,
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                             Integer pendingThreshold) {
 
         super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
-              shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
+              spotReTriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
 
         this.executorsForTypes = new LinkedList<>();
@@ -106,19 +107,36 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         return retVal;
     }
 
+    //    @Override
+    //    protected String getStatefulInstanceId(String instanceId) {
+    //        String retVal = null;
+    //
+    //        IAwsGroupRepo awsGroupRepo = RepoManager.getInstance().getAwsGroupRepo();
+    //        ApiResponse<List<AwsStatefulInstance>> statefulInstancesResponse =
+    //                awsGroupRepo.getStatefulInstances(groupId, accountId);
+    //
+    //        if (statefulInstancesResponse.isRequestSucceed()) {
+    //            List<AwsStatefulInstance> groupStatefulInstances      = statefulInstancesResponse.getValue();
+    //            boolean                   isGroupHasStatefulInstances = CollectionUtils.isNotEmpty(groupStatefulInstances);
+    //
+    //            if (isGroupHasStatefulInstances) {
+    //                Optional<AwsStatefulInstance> optionalAwsStatefulInstance = groupStatefulInstances.stream()
+    //                                                                                                  .filter(statefulInstance -> instanceId.equals(
+    //                                                                                                          statefulInstance.getInstanceId()))
+    //                                                                                                  .findFirst();
+    //                boolean isStatefulInstance = optionalAwsStatefulInstance.isPresent();
+    //
+    //                if (isStatefulInstance) {
+    //                    retVal = optionalAwsStatefulInstance.get().getId();
+    //                }
+    //            }
+    //        }
+    //
+    //        return retVal;
+    //    }
+
     @Override
-    protected String getSsiId(String instanceId) {
-        String              retVal           = null;
-        AwsStatefulInstance statefulInstance = getStatefulInstance(instanceId);
-
-        if (statefulInstance != null) {
-            retVal = statefulInstance.getId();
-        }
-
-        return retVal;
-    }
-
-    private AwsStatefulInstance getStatefulInstance(String instanceId) {
+    protected AwsStatefulInstance getStatefulInstance(String instanceId) {
         AwsStatefulInstance retVal             = null;
         boolean             isInstanceStateful = ssiByInstanceId != null && ssiByInstanceId.containsKey(instanceId);
 
@@ -308,6 +326,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             List<AwsStatefulInstance> statefulInstances = statefulInstancesResponse.getValue();
             this.ssiByInstanceId = statefulInstances.stream().collect(
                     Collectors.toMap(AwsStatefulInstance::getInstanceId, statefulInstance -> statefulInstance));
+            StatefulInstanceManager.getStatefulInstanceIdsByGroupId().put(groupId, statefulInstances);
         }
         else {
             LOGGER.error(String.format("Failed to get group %s stateful instances. Errors: %s", groupId,
@@ -322,7 +341,6 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
         LOGGER.info(String.format("%s new spot requests created", scaleUpResult.getNewSpotRequests().size()));
 
         for (AwsScaleResultNewSpot spot : scaleUpResult.getNewSpotRequests()) {
-
             SpotinstSlave slave = handleNewAwsInstance(spot.getInstanceId(), spot.getInstanceType(), label);
 
             retVal.add(slave);
@@ -381,7 +399,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                 AwsStatefulInstance statefulInstance = getStatefulInstance(instance.getInstanceId());
                 boolean isStatefulInstanceReadyForUse = statefulInstance != null &&
                                                         Objects.equals(statefulInstance.getState(),
-                                                                       StatefulInstanceStateEnum.ACTIVE);
+                                                                       AwsStatefulInstanceStateEnum.ACTIVE);
                 retVal = isStatefulInstanceReadyForUse;
             }
             else {
@@ -506,7 +524,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                     this.executorsByInstanceType.put(type, executors);
 
                     if (instance.getIsValid() == false) {
-                        LOGGER.error(String.format("Invalid type \'%s\' in group \'%s\'", type, this.getGroupId()));
+                        LOGGER.error(String.format("Invalid type '%s' in group '%s'", type, this.getGroupId()));
                         invalidInstanceTypes.add(type);
                     }
                 }

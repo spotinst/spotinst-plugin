@@ -5,6 +5,7 @@ import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.*;
+import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
 import hudson.plugins.spotinst.model.common.BlResponse;
 import hudson.plugins.spotinst.slave.*;
 import hudson.plugins.sshslaves.SSHConnector;
@@ -14,7 +15,6 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.BooleanUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private   EnvironmentVariablesNodeProperty  environmentVariables;
     private   ToolLocationNodeProperty          toolLocations;
     private   Boolean                           shouldUseWebsocket;
-    private   Boolean                           shouldRetriggerBuilds;
+    private   SpotReTriggerBuilds               spotReTriggerBuilds;
     private   Boolean                           isSingleTaskNodesEnabled;
     private   ComputerConnector                 computerConnector;
     private   ConnectionMethodEnum              connectionMethod;
@@ -65,7 +65,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Constructor
     public BaseSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
                              SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
-                             Boolean shouldRetriggerBuilds, String vmargs,
+                             SpotReTriggerBuilds spotReTriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
                              ToolLocationNodeProperty toolLocations, String accountId,
                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
@@ -88,7 +88,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
             this.usage = SlaveUsageEnum.NORMAL;
         }
 
-        this.shouldRetriggerBuilds = shouldRetriggerBuilds == null || BooleanUtils.isTrue(shouldRetriggerBuilds);
+        if (spotReTriggerBuilds != null) {
+            this.spotReTriggerBuilds = spotReTriggerBuilds;
+        }
+        else {
+            this.spotReTriggerBuilds = new SpotReTriggerBuilds(false, false);
+        }
+
         this.tunnel = tunnel;
         this.shouldUseWebsocket = shouldUseWebsocket;
         this.vmargs = vmargs;
@@ -301,7 +307,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                 try {
                     SpotSSHComputerLauncher launcher =
                             new SpotSSHComputerLauncher(connector.launch(ipForAgent, computerForAgent.getListener()),
-                                                        this.getShouldRetriggerBuilds());
+                                                        this.getShouldReTriggerBuilds());
                     offlineAgent.setLauncher(launcher);
                     // save this information to disk - so Launcher survives Jenkins restarts
                     offlineAgent.save();
@@ -368,10 +374,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
         SlaveComputer computer = slave.getComputer();
         if (computer != null) {
             Integer offlineThreshold  = getSlaveOfflineThreshold();
-            Boolean isSlaveConnecting = computer.isConnecting();
-            Boolean isSlaveOffline    = computer.isOffline();
+            boolean isSlaveConnecting = computer.isConnecting();
+            boolean isSlaveOffline    = computer.isOffline();
             // the computer is actively marked as temporary offline
-            Boolean temporarilyOffline = computer.isTemporarilyOffline();
+            boolean temporarilyOffline = computer.isTemporarilyOffline();
             long    idleStartMillis    = computer.getIdleStartMilliseconds();
 
             long idleInMillis  = System.currentTimeMillis() - idleStartMillis;
@@ -514,11 +520,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
 
         List<NodeProperty<?>> nodeProperties = buildNodeProperties();
+        String ssiId = getSsiId(id);
 
         try {
             ComputerLauncher launcher = buildLauncherForAgent(id);
-            slave = new SpotinstSlave(id, groupId, id, instanceType, labelString, idleTerminationMinutes, workspaceDir,
-                                      numOfExecutors, mode, launcher, nodeProperties);
+            slave = new SpotinstSlave(id, groupId, id, instanceType, ssiId, labelString, idleTerminationMinutes,
+                                      workspaceDir, numOfExecutors, mode, launcher, nodeProperties);
 
         }
         catch (Descriptor.FormException | IOException e) {
@@ -531,7 +538,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     private ComputerLauncher buildLauncherForAgent(String instanceId) throws IOException {
         ComputerLauncher     retVal;
-        Boolean              isSshCloud          = this.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
+        boolean              isSshCloud          = this.getConnectionMethod().equals(ConnectionMethodEnum.SSH);
         SlaveInstanceDetails instanceDetailsById = getSlaveDetails(instanceId);
 
         if (isSshCloud) {
@@ -546,7 +553,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     private ComputerLauncher handleJNLPLauncher() {
         return new SpotinstComputerLauncher(this.getTunnel(), this.getVmargs(), this.getShouldUseWebsocket(),
-                                            this.getShouldRetriggerBuilds());
+                                            this.getShouldReTriggerBuilds());
     }
 
     private ComputerLauncher HandleSSHLauncher(SlaveInstanceDetails instanceDetailsById) throws IOException {
@@ -564,7 +571,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
             if (ipAddress != null) {
                 try {
-                    Boolean shouldRetriggerBuilds = this.getShouldRetriggerBuilds();
+                    Boolean shouldRetriggerBuilds = this.getShouldReTriggerBuilds();
                     retVal = new SpotSSHComputerLauncher(
                             this.getComputerConnector().launch(instanceDetailsById.getPublicIp(), TaskListener.NULL),
                             shouldRetriggerBuilds);
@@ -645,7 +652,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     protected Integer getNumOfExecutors(String instanceType) {
-        Integer retVal;
+        int     retVal;
         boolean isSingleTaskNodesEnabled = getIsSingleTaskNodesEnabled();
 
         if (isSingleTaskNodesEnabled) {
@@ -753,12 +760,32 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.shouldUseWebsocket = shouldUseWebsocket;
     }
 
-    public Boolean getShouldRetriggerBuilds() {
-        return shouldRetriggerBuilds;
+    public SpotReTriggerBuilds getSpotReTriggerBuilds() {
+        if(spotReTriggerBuilds == null){
+            spotReTriggerBuilds = new SpotReTriggerBuilds(false, false);
+        }
+
+        return spotReTriggerBuilds;
     }
 
-    public void setShouldRetriggerBuilds(Boolean shouldRetriggerBuilds) {
-        this.shouldRetriggerBuilds = shouldRetriggerBuilds;
+    public void setSpotReTriggerBuilds(SpotReTriggerBuilds spotReTriggerBuilds) {
+        this.spotReTriggerBuilds = spotReTriggerBuilds;
+    }
+
+    public Boolean getShouldReTriggerBuilds() {
+        return getSpotReTriggerBuilds().getShouldReTriggerBuilds();
+    }
+
+    public void setShouldReTriggerBuilds(Boolean shouldReTriggerBuilds) {
+        getSpotReTriggerBuilds().setShouldReTriggerBuilds(shouldReTriggerBuilds);
+    }
+
+    public Boolean getStickyNode() {
+        return getSpotReTriggerBuilds().getStickyNode();
+    }
+
+    public void setStickyNode(Boolean stickyNode) {
+        getSpotReTriggerBuilds().setStickyNode(stickyNode);
     }
 
     public ConnectionMethodEnum getConnectionMethod() {
@@ -787,6 +814,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         if (shouldUsePrivateIp == null) {
             return false;
         }
+
         return shouldUsePrivateIp;
     }
 
@@ -894,7 +922,18 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return isStatefulGroup;
     }
 
-    protected abstract String getSsiId(String instanceId);
+    public String getSsiId(String instanceId){
+        String retVal = null;
+        BaseStatefulInstance statefulInstance = getStatefulInstance(instanceId);
+
+        if(statefulInstance != null){
+            retVal = statefulInstance.getId();
+        }
+
+        return retVal;
+    }
+
+    protected abstract BaseStatefulInstance getStatefulInstance(String instanceId);
 
     protected abstract Boolean detachInstance(String instanceId);
 

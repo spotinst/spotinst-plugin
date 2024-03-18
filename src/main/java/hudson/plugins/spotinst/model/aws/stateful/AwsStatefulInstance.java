@@ -2,29 +2,21 @@ package hudson.plugins.spotinst.model.aws.stateful;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import hudson.plugins.spotinst.common.stateful.StatefulInstanceStateEnum;
+import hudson.plugins.spotinst.common.stateful.AwsStatefulInstanceStateEnum;
+import hudson.plugins.spotinst.model.common.BaseStatefulInstance;
 
 /**
  * Created by ItayShklar on 07/08/2023.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AwsStatefulInstance {
+public class AwsStatefulInstance extends BaseStatefulInstance {
     //region members
-    private String                    id;
-    private String                    instanceId;
-    private StatefulInstanceStateEnum state;
+    private String                       instanceId;
+    private AwsStatefulInstanceStateEnum state;
     //endregion
 
     //region getters & setters
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public String getInstanceId() {
         return instanceId;
     }
@@ -33,11 +25,11 @@ public class AwsStatefulInstance {
         this.instanceId = instanceId;
     }
 
-    public StatefulInstanceStateEnum getState() {
+    public AwsStatefulInstanceStateEnum getState() {
         return state;
     }
 
-    public void setState(StatefulInstanceStateEnum state) {
+    public void setState(AwsStatefulInstanceStateEnum state) {
         this.state = state;
     }
     //endregion
