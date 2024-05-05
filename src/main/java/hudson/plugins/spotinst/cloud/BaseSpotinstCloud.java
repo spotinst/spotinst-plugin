@@ -39,6 +39,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
 
     protected String                            elastigroupName;
+    protected String                            elastigroupDisplayName;
     protected String                            accountId;
     protected String                            groupId;
     protected Map<String, PendingInstance>      pendingInstances;
@@ -65,7 +66,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Constructor
-    public BaseSpotinstCloud(String name, String groupId, String labelString, String idleTerminationMinutes,
+    public BaseSpotinstCloud(String elastigroupName, String groupId, String labelString, String idleTerminationMinutes,
                              String workspaceDir, SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                              Boolean shouldRetriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
@@ -74,7 +75,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                              Integer pendingThreshold) {
         super(groupId);
-        this.elastigroupName = generateGroupDisplayName(name, groupId);
+        this.elastigroupName = elastigroupName;
+        this.elastigroupDisplayName = generateGroupDisplayName(elastigroupName, groupId);
         this.groupId = groupId;
         this.accountId = accountId;
         this.labelString = labelString;
@@ -204,14 +206,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //For Jelly use
     public String getIconAltText() {
         String retVal;
-        String emptyString      = "";
-        String superIconAltText = this.getClass().getSimpleName().replace("Cloud", "");
-        ;
+        String emptyString      = StringUtils.EMPTY;
+        String displayIconAltText = getDescriptor().getDisplayName();
         String labelToolTip =
                 StringUtils.isEmpty(labelString) ? emptyString : String.format("%nLabels: %s", labelString);
         String idleToolTip = StringUtils.isEmpty(idleTerminationMinutes) ? emptyString :
                              String.format("%nIdle time: %s", idleTerminationMinutes);
-        retVal = String.format("%s%s%s", superIconAltText, labelToolTip, idleToolTip);
+        retVal = String.format("%s%s%s", displayIconAltText, labelToolTip, idleToolTip);
         return retVal;
     }
 
@@ -222,31 +223,28 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Public Methods
-    public void setGroupNameToElastigroupNameIfNeeded() {
+    public void initializeElastigroupDisplayNameIfNeeded() {
         boolean shouldSetElastigroupNameToCloud = StringUtils.isNotEmpty(groupId) &&
-                                                  (StringUtils.isEmpty(elastigroupName) ||
-                                                   StringUtils.equals(elastigroupName, groupId));
+                                                  (StringUtils.isEmpty(elastigroupDisplayName));
 
         if (shouldSetElastigroupNameToCloud) {
             LOGGER.info("found cloud {} without elastigroup name. fetching...", this.groupId);
             String elastigroupName = getElastigroupName();
 
             if (elastigroupName != null) {
-                this.elastigroupName = generateGroupDisplayName(elastigroupName, groupId);
+                this.elastigroupName = elastigroupName;
+                this.elastigroupDisplayName = generateGroupDisplayName(elastigroupName, groupId);
                 LOGGER.info("fetched elastigroup name {} for cloud {}. generated name {}", elastigroupName, groupId,
-                            getElastigroupName());
+                            elastigroupDisplayName);
             }
         }
     }
 
     public static String generateGroupDisplayName(String groupName, String groupId) {
-        String retVal;
+        String retVal = null;
 
         if (StringUtils.isNotEmpty(groupName)) {
             retVal = String.format("%s (%s)", groupName, groupId);
-        }
-        else {
-            retVal = groupId;
         }
 
         return retVal;
@@ -740,11 +738,20 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     //region Getters / Setters
     public String getName() {
-        return elastigroupName;
+        String retVal;
+
+        if(StringUtils.isNotEmpty(elastigroupDisplayName)) {
+            retVal = elastigroupDisplayName;
+        }
+        else{
+            retVal = groupId;
+        }
+
+        return retVal;
     }
 
     public void setName(String elastigroupName) {
-        this.elastigroupName = elastigroupName;
+        this.elastigroupDisplayName = elastigroupName;
     }
 
     public String getGroupId() {

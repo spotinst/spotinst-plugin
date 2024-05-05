@@ -19,7 +19,7 @@ public class JenkinsStartupListener {
         LOGGER.info("Jenkins has started. Generating elastigroup names for spotinst clouds without elastigroup names...");
         Jenkins.get().clouds.stream().filter(cloud -> cloud instanceof BaseSpotinstCloud)
                             .map(cloud -> (BaseSpotinstCloud) cloud).forEach(
-                       BaseSpotinstCloud::setGroupNameToElastigroupNameIfNeeded);
+                       BaseSpotinstCloud::initializeElastigroupDisplayNameIfNeeded);
 
         try {
             Jenkins.get().save();
