@@ -15,6 +15,7 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //region Members
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseSpotinstCloud.class);
 
+    protected String                            elastigroupName;
     protected String                            accountId;
     protected String                            groupId;
     protected Map<String, PendingInstance>      pendingInstances;
@@ -63,16 +65,16 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Constructor
-    public BaseSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes, String workspaceDir,
-                             SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
+    public BaseSpotinstCloud(String name, String groupId, String labelString, String idleTerminationMinutes,
+                             String workspaceDir, SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                              Boolean shouldRetriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
                              ToolLocationNodeProperty toolLocations, String accountId,
                              ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                              Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                              Integer pendingThreshold) {
-
         super(groupId);
+        this.elastigroupName = generateGroupDisplayName(name, groupId);
         this.groupId = groupId;
         this.accountId = accountId;
         this.labelString = labelString;
@@ -199,6 +201,20 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return this.name;
     }
 
+    //For Jelly use
+    public String getIconAltText() {
+        String retVal;
+        String emptyString      = "";
+        String superIconAltText = this.getClass().getSimpleName().replace("Cloud", "");
+        ;
+        String labelToolTip =
+                StringUtils.isEmpty(labelString) ? emptyString : String.format("%nLabels: %s", labelString);
+        String idleToolTip = StringUtils.isEmpty(idleTerminationMinutes) ? emptyString :
+                             String.format("%nIdle time: %s", idleTerminationMinutes);
+        retVal = String.format("%s%s%s", superIconAltText, labelToolTip, idleToolTip);
+        return retVal;
+    }
+
     public Boolean isInstancePending(String id) {
         Boolean retVal = pendingInstances.containsKey(id);
         return retVal;
@@ -206,6 +222,36 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Public Methods
+    public void setGroupNameToElastigroupNameIfNeeded() {
+        boolean shouldSetElastigroupNameToCloud = StringUtils.isNotEmpty(groupId) &&
+                                                  (StringUtils.isEmpty(elastigroupName) ||
+                                                   StringUtils.equals(elastigroupName, groupId));
+
+        if (shouldSetElastigroupNameToCloud) {
+            LOGGER.info("found cloud {} without elastigroup name. fetching...", this.groupId);
+            String elastigroupName = getElastigroupName();
+
+            if (elastigroupName != null) {
+                this.elastigroupName = generateGroupDisplayName(elastigroupName, groupId);
+                LOGGER.info("fetched elastigroup name {} for cloud {}. generated name {}", elastigroupName, groupId,
+                            getElastigroupName());
+            }
+        }
+    }
+
+    public static String generateGroupDisplayName(String groupName, String groupId) {
+        String retVal;
+
+        if (StringUtils.isNotEmpty(groupName)) {
+            retVal = String.format("%s (%s)", groupName, groupId);
+        }
+        else {
+            retVal = groupId;
+        }
+
+        return retVal;
+    }
+
     public Boolean onInstanceReady(String instanceId) {
         boolean retVal = isCloudReadyForGroupCommunication();
 
@@ -693,6 +739,14 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Getters / Setters
+    public String getName() {
+        return elastigroupName;
+    }
+
+    public void setName(String elastigroupName) {
+        this.elastigroupName = elastigroupName;
+    }
+
     public String getGroupId() {
         return groupId;
     }
@@ -855,6 +909,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Abstract Methods
+    abstract String getElastigroupName();
+
     abstract List<SpotinstSlave> scaleUp(ProvisionRequest request);
 
     public Boolean removeInstance(String instanceId) {
@@ -882,7 +938,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     protected abstract BlResponse<Boolean> checkIsStatefulGroup();
 
-    private void initIsStatefulGroup(){
+    private void initIsStatefulGroup() {
         BlResponse<Boolean> isStatefulResponse = checkIsStatefulGroup();
 
         if (isStatefulResponse.isSucceed()) {

@@ -6,10 +6,7 @@ import hudson.plugins.spotinst.api.infra.ApiResponse;
 import hudson.plugins.spotinst.api.infra.JsonMapper;
 import hudson.plugins.spotinst.common.ConnectionMethodEnum;
 import hudson.plugins.spotinst.model.common.BlResponse;
-import hudson.plugins.spotinst.model.gcp.GcpGroupInstance;
-import hudson.plugins.spotinst.model.gcp.GcpMachineType;
-import hudson.plugins.spotinst.model.gcp.GcpResultNewInstance;
-import hudson.plugins.spotinst.model.gcp.GcpScaleUpResult;
+import hudson.plugins.spotinst.model.gcp.*;
 import hudson.plugins.spotinst.repos.IGcpGroupRepo;
 import hudson.plugins.spotinst.repos.RepoManager;
 import hudson.plugins.spotinst.slave.SlaveInstanceDetails;
@@ -19,6 +16,7 @@ import hudson.slaves.ComputerConnector;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tools.ToolLocationNodeProperty;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,13 +47,18 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
                             ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                             Integer pendingThreshold) {
-        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+        super(getElastigroupName(groupId, accountId), groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
     //endregion
 
     //region Overrides
+    @Override
+    public String getElastigroupName(){
+        return getElastigroupName(groupId, accountId);
+    }
+
     @Override
     List<SpotinstSlave> scaleUp(ProvisionRequest request) {
         List<SpotinstSlave> retVal       = new LinkedList<>();
@@ -211,6 +214,22 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Private Methods
+    private static String getElastigroupName(String groupId, String accountId){
+        String                retVal        = null;
+
+        if(StringUtils.isNotEmpty(groupId)) {
+            IGcpGroupRepo         gcpGroupRepo  = RepoManager.getInstance().getGcpGroupRepo();
+            ApiResponse<GcpGroup> groupResponse = gcpGroupRepo.getGroup(groupId, accountId);
+
+            if (groupResponse.isRequestSucceed()) {
+                GcpGroup group = groupResponse.getValue();
+                retVal = group.getName();
+            }
+        }
+
+        return retVal;
+    }
+
     private SpotinstSlave handleNewGcpInstance(String instanceName, String machineType, String label) {
         LOGGER.info(String.format("Setting the # of executors for instance type: %s", machineType));
         Integer executors = getNumOfExecutors(machineType);

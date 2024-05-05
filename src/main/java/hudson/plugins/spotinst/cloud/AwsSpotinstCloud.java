@@ -54,7 +54,7 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                             Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                             Integer pendingThreshold) {
 
-        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+        super(getElastigroupName(groupId, accountId), groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
 
@@ -70,6 +70,11 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Overrides
+    @Override
+    public String getElastigroupName(){
+        return getElastigroupName(groupId, accountId);
+    }
+
     @Override
     List<SpotinstSlave> scaleUp(ProvisionRequest request) {
         List<SpotinstSlave> retVal = new LinkedList<>();
@@ -248,6 +253,22 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
     //endregion
 
     //region Private Methods
+    private static String getElastigroupName(String groupId, String accountId){
+        String retVal = null;
+
+        if(StringUtils.isNotEmpty(groupId)) {
+            IAwsGroupRepo         awsGroupRepo  = RepoManager.getInstance().getAwsGroupRepo();
+            ApiResponse<AwsGroup> groupResponse = awsGroupRepo.getGroup(groupId, accountId);
+
+            if (groupResponse.isRequestSucceed()) {
+                AwsGroup group = groupResponse.getValue();
+                retVal = group.getName();
+            }
+        }
+
+        return retVal;
+    }
+
     @Override
     protected int getOverriddenNumberOfExecutors(String instanceType) {
         Integer retVal;

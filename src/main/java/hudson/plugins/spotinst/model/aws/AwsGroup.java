@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AwsGroup {
     //region members
-    private String                        id;
+    private String           id;
     private String           name;
     private String           description;
     private AwsGroupStrategy strategy;
