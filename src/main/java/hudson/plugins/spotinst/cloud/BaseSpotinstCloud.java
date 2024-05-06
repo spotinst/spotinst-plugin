@@ -203,7 +203,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return this.name;
     }
 
-    //Used by Jelly for retrieve cloud's alt text for tooltip
+    //Used by Jelly for retrieve cloud's alt text (used for cloud's tooltip, since 2.420)
     public String getIconAltText() {
         String retVal;
         String cloudDescriptorName = getDescriptor().getDisplayName();
