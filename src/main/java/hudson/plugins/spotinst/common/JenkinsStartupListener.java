@@ -16,16 +16,17 @@ public class JenkinsStartupListener {
 
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
     public static void onJenkinsStart() {
-        LOGGER.info("Jenkins has started. Generating elastigroup names for spotinst clouds without elastigroup names...");
+        LOGGER.info(
+                "Jenkins has started. Handle Backward Compatibility for changing Jenkins version s.a Generating elastigroup names for spotinst clouds without elastigroup names...");
         Jenkins.get().clouds.stream().filter(cloud -> cloud instanceof BaseSpotinstCloud)
-                            .map(cloud -> (BaseSpotinstCloud) cloud).forEach(
-                       BaseSpotinstCloud::handleBackwardCompatibility);
+                            .map(cloud -> (BaseSpotinstCloud) cloud)
+                            .forEach(BaseSpotinstCloud::handleBackwardCompatibility);
 
         try {
             Jenkins.get().save();
         }
-        catch (IOException exception){
-            LOGGER.error("failed to update");
+        catch (IOException exception) {
+            LOGGER.error("failed to update", exception);
         }
     }
 }
