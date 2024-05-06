@@ -995,10 +995,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     //region backward compatibility
     public void handleBackwardCompatibility(){
-        initializeElastigroupDisplayNameIfNeeded();
+        initializeElastigroupDisplayName();
     }
 
-    private void initializeElastigroupDisplayNameIfNeeded() {
+    private void initializeElastigroupDisplayName() {
         boolean shouldSetElastigroupNameToCloud =
                 StringUtils.isNotEmpty(groupId) && (StringUtils.isEmpty(elastigroupDisplayName));
 
