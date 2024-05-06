@@ -203,16 +203,15 @@ public abstract class BaseSpotinstCloud extends Cloud {
         return this.name;
     }
 
-    //For Jelly use
+    //Used by Jelly for retrieve cloud's alt text for tooltip
     public String getIconAltText() {
         String retVal;
-        String emptyString      = StringUtils.EMPTY;
-        String displayIconAltText = getDescriptor().getDisplayName();
+        String cloudDescriptorName = getDescriptor().getDisplayName();
         String labelToolTip =
-                StringUtils.isEmpty(labelString) ? emptyString : String.format("%nLabels: %s", labelString);
-        String idleToolTip = StringUtils.isEmpty(idleTerminationMinutes) ? emptyString :
+                StringUtils.isEmpty(labelString) ? StringUtils.EMPTY : String.format("%nLabels: %s", labelString);
+        String idleToolTip = StringUtils.isEmpty(idleTerminationMinutes) ? StringUtils.EMPTY :
                              String.format("%nIdle time: %s", idleTerminationMinutes);
-        retVal = String.format("%s%s%s", displayIconAltText, labelToolTip, idleToolTip);
+        retVal = String.format("%s%s%s", cloudDescriptorName, labelToolTip, idleToolTip);
         return retVal;
     }
 
@@ -223,23 +222,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Public Methods
-    public void initializeElastigroupDisplayNameIfNeeded() {
-        boolean shouldSetElastigroupNameToCloud = StringUtils.isNotEmpty(groupId) &&
-                                                  (StringUtils.isEmpty(elastigroupDisplayName));
-
-        if (shouldSetElastigroupNameToCloud) {
-            LOGGER.info("found cloud {} without elastigroup name. fetching...", this.groupId);
-            String elastigroupName = getElastigroupName();
-
-            if (elastigroupName != null) {
-                this.elastigroupName = elastigroupName;
-                this.elastigroupDisplayName = generateGroupDisplayName(elastigroupName, groupId);
-                LOGGER.info("fetched elastigroup name {} for cloud {}. generated name {}", elastigroupName, groupId,
-                            elastigroupDisplayName);
-            }
-        }
-    }
-
     public static String generateGroupDisplayName(String groupName, String groupId) {
         String retVal = null;
 
@@ -740,10 +722,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
     public String getName() {
         String retVal;
 
-        if(StringUtils.isNotEmpty(elastigroupDisplayName)) {
+        if (StringUtils.isNotEmpty(elastigroupDisplayName)) {
             retVal = elastigroupDisplayName;
         }
-        else{
+        else {
             retVal = groupId;
         }
 
@@ -1007,6 +989,29 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
         public Integer getDefaultPendingThreshold() {
             return Constants.DEFAULT_PENDING_INSTANCE_TIMEOUT_IN_MINUTES;
+        }
+    }
+    //endregion
+
+    //region backward compatibility
+    public void handleBackwardCompatibility(){
+        initializeElastigroupDisplayNameIfNeeded();
+    }
+
+    private void initializeElastigroupDisplayNameIfNeeded() {
+        boolean shouldSetElastigroupNameToCloud =
+                StringUtils.isNotEmpty(groupId) && (StringUtils.isEmpty(elastigroupDisplayName));
+
+        if (shouldSetElastigroupNameToCloud) {
+            LOGGER.info("found cloud {} without elastigroup name. fetching...", this.groupId);
+            String elastigroupName = getElastigroupName();
+
+            if (elastigroupName != null) {
+                this.elastigroupName = elastigroupName;
+                this.elastigroupDisplayName = generateGroupDisplayName(elastigroupName, groupId);
+                LOGGER.info("fetched elastigroup name {} for cloud {}. generated name {}", elastigroupName, groupId,
+                            elastigroupDisplayName);
+            }
         }
     }
     //endregion

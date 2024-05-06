@@ -264,6 +264,9 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
                 AwsGroup group = groupResponse.getValue();
                 retVal = group.getName();
             }
+            else {
+                LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+            }
         }
 
         return retVal;

@@ -225,6 +225,9 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
                 GcpGroup group = groupResponse.getValue();
                 retVal = group.getName();
             }
+            else {
+                LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+            }
         }
 
         return retVal;
