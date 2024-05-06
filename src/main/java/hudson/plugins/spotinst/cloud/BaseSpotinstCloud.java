@@ -66,7 +66,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     //endregion
 
     //region Constructor
-    public BaseSpotinstCloud(String elastigroupName, String groupId, String labelString, String idleTerminationMinutes,
+    public BaseSpotinstCloud(String groupId, String labelString, String idleTerminationMinutes,
                              String workspaceDir, SlaveUsageEnum usage, String tunnel, Boolean shouldUseWebsocket,
                              Boolean shouldRetriggerBuilds, String vmargs,
                              EnvironmentVariablesNodeProperty environmentVariables,
@@ -75,10 +75,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
                              Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                              Integer pendingThreshold) {
         super(groupId);
-        this.elastigroupName = elastigroupName;
-        this.elastigroupDisplayName = generateGroupDisplayName(elastigroupName, groupId);
         this.groupId = groupId;
         this.accountId = accountId;
+        this.elastigroupName = getElastigroupName();
+        this.elastigroupDisplayName = generateGroupDisplayName(elastigroupName, groupId);
         this.labelString = labelString;
         this.idleTerminationMinutes = idleTerminationMinutes;
         this.workspaceDir = workspaceDir;

@@ -47,7 +47,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
                               ConnectionMethodEnum connectionMethod, ComputerConnector computerConnector,
                               Boolean shouldUsePrivateIp, SpotGlobalExecutorOverride globalExecutorOverride,
                               Integer pendingThreshold) {
-        super(getElastigroupName(groupId, accountId), groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
+        super(groupId, labelString, idleTerminationMinutes, workspaceDir, usage, tunnel, shouldUseWebsocket,
               shouldRetriggerBuilds, vmargs, environmentVariables, toolLocations, accountId, connectionMethod,
               computerConnector, shouldUsePrivateIp, globalExecutorOverride, pendingThreshold);
     }
@@ -255,7 +255,7 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
                 retVal = group.getName();
             }
             else {
-                LOGGER.error(String.format("Failed to get group %s.", groupId), groupResponse.getErrors());
+                LOGGER.error("Failed to get group {}. Errors: {}", groupId, groupResponse.getErrors());
             }
         }
 
