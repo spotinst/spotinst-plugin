@@ -250,12 +250,12 @@ public class AzureSpotinstCloud extends BaseSpotinstCloud {
             IAzureGroupRepo         azureGroupRepo = RepoManager.getInstance().getAzureGroupRepo();
             ApiResponse<AzureGroup> groupResponse  = azureGroupRepo.getGroup(groupId, accountId);
 
-            if (groupResponse.isRequestSucceed()) {
+            if (groupResponse.isRequestSucceed() && groupResponse.getValue() != null) {
                 AzureGroup group = groupResponse.getValue();
                 retVal = group.getName();
             }
             else {
-                LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+                LOGGER.error(String.format("Failed to get group %s.", groupId), groupResponse.getErrors());
             }
         }
 

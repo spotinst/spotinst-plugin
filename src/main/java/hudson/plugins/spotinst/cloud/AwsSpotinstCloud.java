@@ -260,12 +260,12 @@ public class AwsSpotinstCloud extends BaseSpotinstCloud {
             IAwsGroupRepo         awsGroupRepo  = RepoManager.getInstance().getAwsGroupRepo();
             ApiResponse<AwsGroup> groupResponse = awsGroupRepo.getGroup(groupId, accountId);
 
-            if (groupResponse.isRequestSucceed()) {
+            if (groupResponse.isRequestSucceed() && groupResponse.getValue() != null) {
                 AwsGroup group = groupResponse.getValue();
                 retVal = group.getName();
             }
             else {
-                LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+                LOGGER.error(String.format("Failed to get group %s.", groupId), groupResponse.getErrors());
             }
         }
 

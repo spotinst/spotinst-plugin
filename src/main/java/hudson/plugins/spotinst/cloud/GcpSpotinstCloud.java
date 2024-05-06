@@ -221,12 +221,12 @@ public class GcpSpotinstCloud extends BaseSpotinstCloud {
             IGcpGroupRepo         gcpGroupRepo  = RepoManager.getInstance().getGcpGroupRepo();
             ApiResponse<GcpGroup> groupResponse = gcpGroupRepo.getGroup(groupId, accountId);
 
-            if (groupResponse.isRequestSucceed()) {
+            if (groupResponse.isRequestSucceed() && groupResponse.getValue() != null) {
                 GcpGroup group = groupResponse.getValue();
                 retVal = group.getName();
             }
             else {
-                LOGGER.error(String.format("Failed to get group %s. Errors: %s", groupId, groupResponse.getErrors()));
+                LOGGER.error(String.format("Failed to get group %s.", groupId), groupResponse.getErrors());
             }
         }
 
