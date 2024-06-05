@@ -40,6 +40,11 @@ termination"
 
 [SpotinstPlugin-Versionhistory]
 == Version history
+[SpotinstPlugin-Version2.2.19(May29,2024)]
+=== Version 2.2.19 (May 29, 2024)
+
+* AWS stateful groups: removed support of all "false" values persistence
+
 [SpotinstPlugin-Version2.2.18(May07,2024)]
 === Version 2.2.18 (May 07, 2024)
 
