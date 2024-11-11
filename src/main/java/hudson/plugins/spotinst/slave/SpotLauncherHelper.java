@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * Created by Shibel Karmi Mansour on 31/12/2020.
- * <p>
+ *
  * A helper class for handling common callbacks (like afterDisconnect) for different types of
  * ComputerLaunchers.
  */
