@@ -40,6 +40,13 @@ termination"
 
 [SpotinstPlugin-Versionhistory]
 == Version history
+[SpotinstPlugin-Version2.2.20(Dec19,2024)]
+=== Version 2.2.20 (Dec 19, 2024)
+
+* Pending Timeout Behavior Change:
+* Previous Behavior: It was possible to set a value above 15 minutes for the pending timeout, but the maximum timeout was capped at 15 minutes. If the field was left empty, the timeout was set to 10 minutes.
+* New Behavior: Any value set for the pending timeout will now be respected, removing the previous 15-minute limitation. The default remains 10 minutes. If you explicitly set a value, it will be honored without the previous cap.
+
 [SpotinstPlugin-Version2.2.19(Nov18,2024)]
 === Version 2.2.19 (Nov 18, 2024)
 
