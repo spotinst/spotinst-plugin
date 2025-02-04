@@ -246,6 +246,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     public void removeInstanceFromPending(String instanceId) {
+        LOGGER.info("Removing pending instance {} from the map of pending instances.", instanceId);
         pendingInstances.remove(instanceId);
     }
 
@@ -285,6 +286,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                         }
                         else {
                             LOGGER.error(String.format("Can't find the slave %s",key));
+                            removeInstanceFromPending(key);
                         }
                     }
                 }
