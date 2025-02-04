@@ -285,7 +285,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                                     pendingInstance.getId(), pendingThreshold));
                         }
                         else {
-                            LOGGER.error(String.format("Can't find the slave %s",key));
+                            LOGGER.warn(String.format("Can't find the slave %s",key));
                             removeInstanceFromPending(key);
                         }
                     }
