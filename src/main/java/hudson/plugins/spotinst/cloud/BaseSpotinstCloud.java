@@ -43,6 +43,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     protected String                            accountId;
     protected String                            groupId;
     protected Map<String, PendingInstance>      pendingInstances;
+    protected Map<String, ReadyInstance>        readyInstances = new HashMap<>();
     protected Map<String, SlaveInstanceDetails> slaveInstancesDetailsByInstanceId;
     private   String                            labelString;
     private   String                            idleTerminationMinutes;
@@ -83,6 +84,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         this.idleTerminationMinutes = idleTerminationMinutes;
         this.workspaceDir = workspaceDir;
         this.pendingInstances = new HashMap<>();
+        this.readyInstances = new HashMap<>();
         labelSet = Label.parse(labelString);
 
         if (usage != null) {
@@ -219,6 +221,11 @@ public abstract class BaseSpotinstCloud extends Cloud {
         Boolean retVal = pendingInstances.containsKey(id);
         return retVal;
     }
+
+    public Boolean isInstanceReady(String id) {
+        Boolean retVal = readyInstances.containsKey(id);
+        return retVal;
+    }
     //endregion
 
     //region Public Methods
@@ -236,7 +243,13 @@ public abstract class BaseSpotinstCloud extends Cloud {
         boolean retVal = isCloudReadyForGroupCommunication();
 
         if (retVal) {
-            removeInstanceFromPending(instanceId);
+            boolean isInstancePending = isInstancePending(instanceId) != null;
+
+            if (isInstancePending) {
+                var pendingInstance = pendingInstances.get(instanceId);
+                moveToReady(pendingInstance);
+                removeInstanceFromPending(instanceId);
+            }
         }
         else {
             LOGGER.error(SKIPPED_METHOD_GROUP_IS_NIT_READY_ERROR_LOGGER_FORMAT, "onInstanceReady", groupId);
@@ -249,6 +262,16 @@ public abstract class BaseSpotinstCloud extends Cloud {
         LOGGER.info("Removing pending instance {} from the map of pending instances.", instanceId);
         pendingInstances.remove(instanceId);
     }
+
+    private void removeInstanceFromReady(String instanceId) {
+        LOGGER.info("Removing ready instance {} from the map of ready instances.", instanceId);
+        boolean isKeyExist = readyInstances.containsKey(instanceId);
+
+        if (isKeyExist) {
+            readyInstances.remove(instanceId);
+        }
+    }
+
 
     public void monitorInstances() {
         if (isCloudReadyForGroupCommunication()) {
@@ -283,15 +306,61 @@ public abstract class BaseSpotinstCloud extends Cloud {
                             LOGGER.info(String.format(
                                     "Instance %s is in initiating state for over than %s minutes, terminating this instance",
                                     pendingInstance.getId(), pendingThreshold));
-                        }
-                        else {
-                            LOGGER.warn(String.format("Can't find the slave %s",key));
+                        } else {
+                            LOGGER.warn(String.format("Can't find the slave %s", key));
                             removeInstanceFromPending(key);
                         }
+                    }
+
+                    // TODO: Gosha
+                    // define criteria for draining nodes
+                    // or connect to external service that uses AI/ML that tells if it should be drained or not
+                    int drainingThreshold = 60 * 1000;
+                    Boolean isPendingOverDrainingThreshold =
+                            TimeUtils.isTimePassedInMinutes(pendingInstance.getCreatedAt(), drainingThreshold);
+                    String instanceId = pendingInstance.getId();
+
+                    if (isPendingOverDrainingThreshold) {
+                        drainNode(instanceId,
+                                String.format("Instance %s is going to be set as drain, because it was created before more than %s msec.",
+                                        instanceId, drainingThreshold));
                     }
                 }
             }
             connectOfflineSshAgents();
+        }
+
+        // TODO: Gosha - in order not to fail on null pointer exception here we temporary added <readyInstances/> to work/config.xml
+        if (readyInstances.size() > 0) {
+            List<String> keys = new LinkedList<>(readyInstances.keySet());
+            List<SpotinstSlave> slaves = getAllSpotinstSlaves();
+
+            for (String key : keys) {
+                ReadyInstance readyInstance = readyInstances.get(key);
+
+                if (readyInstance != null) {
+                    String instanceId = readyInstance.getId();
+                    // TODO: Gosha - get ready/drain threshold
+                    Integer readyThreshold = 2 * 60;
+                    Boolean isReadyOverThreshold =
+                            TimeUtils.isTimePassedInSeconds(readyInstance.getCreatedAt(), readyThreshold);
+
+                    if (isReadyOverThreshold) {
+                        drainNode(instanceId, String.format("Instance %s is going to be set as drain, because it is in ready mode and was created before more than %s msec.", instanceId, readyThreshold));
+                        removeInstanceFromReady(readyInstance.getId());
+                    }
+                }
+            }
+        }
+    }
+
+    private void drainNode(String instanceId, String reason) {
+        Node node = Jenkins.get().getNode(instanceId);
+        if (node != null) {
+            Computer computer = node.toComputer();
+            if (computer != null) {
+                computer.setTemporarilyOffline(true, new OfflineCause.ByCLI(reason));
+            }
         }
     }
 
@@ -536,6 +605,16 @@ public abstract class BaseSpotinstCloud extends Cloud {
         pendingInstance.setRequestedLabel(label);
         pendingInstances.put(id, pendingInstance);
     }
+
+    protected void moveToReady(PendingInstance pendingInstance) {
+        ReadyInstance readyInstance = new ReadyInstance();
+        readyInstance.setId(pendingInstance.getId());
+        readyInstance.setNumOfExecutors(pendingInstance.getNumOfExecutors());
+        readyInstance.setCreatedAt(pendingInstance.getCreatedAt());
+        readyInstance.setRequestedLabel(pendingInstance.getRequestedLabel());
+        readyInstances.put(readyInstance.getId(), readyInstance);
+    }
+
 
     protected SpotinstSlave buildSpotinstSlave(String id, String instanceType, String numOfExecutors) {
         SpotinstSlave slave = null;
@@ -792,6 +871,10 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
     public void setPendingInstances(Map<String, PendingInstance> pendingInstances) {
         this.pendingInstances = pendingInstances;
+    }
+
+    public void setReadyInstances(Map<String, ReadyInstance> readyInstances) {
+        this.readyInstances = readyInstances;
     }
 
     public Boolean getShouldUseWebsocket() {

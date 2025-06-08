@@ -37,6 +37,7 @@ class SpotLauncherHelper {
             SpotinstComputer spotinstComputer = (SpotinstComputer) computer;
             SpotinstSlave    slave            = spotinstComputer.getNode();
 
+// TODO: Gosha - remove from pending and ready here
 
             if (shouldRetriggerBuilds && (slave == null || BooleanUtils.isFalse(slave.isSlavePending()))) {
                 LOGGER.info(String.format("Start retriggering executors for %s", spotinstComputer.getDisplayName()));
