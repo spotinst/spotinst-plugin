@@ -283,6 +283,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
     }
 
     protected void internalMonitorInstances() {
+        // monitor pending instances
         if (pendingInstances.size() > 0) {
             List<String> keys = new LinkedList<>(pendingInstances.keySet());
             List<SpotinstSlave> slaves = getAllSpotinstSlaves();
@@ -321,7 +322,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     String instanceId = pendingInstance.getId();
 
                     if (isPendingOverDrainingThreshold) {
-                        drainNode(instanceId,
+                        drainInstance(instanceId,
                                 String.format("Instance %s is going to be set as drain, because it was created before more than %s msec.",
                                         instanceId, drainingThreshold));
                     }
@@ -330,6 +331,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
             connectOfflineSshAgents();
         }
 
+        // monitor ready instances
         // TODO: Gosha - in order not to fail on null pointer exception here we temporary added <readyInstances/> to work/config.xml
         if (readyInstances.size() > 0) {
             List<String> keys = new LinkedList<>(readyInstances.keySet());
@@ -340,21 +342,51 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
                 if (readyInstance != null) {
                     String instanceId = readyInstance.getId();
-                    // TODO: Gosha - get ready/drain threshold
-                    Integer readyThreshold = 2 * 60;
-                    Boolean isReadyOverThreshold =
-                            TimeUtils.isTimePassedInSeconds(readyInstance.getCreatedAt(), readyThreshold);
+                    boolean shouldBeDrained = shouldBeDrained(readyInstance);
 
-                    if (isReadyOverThreshold) {
-                        drainNode(instanceId, String.format("Instance %s is going to be set as drain, because it is in ready mode and was created before more than %s msec.", instanceId, readyThreshold));
-                        removeInstanceFromReady(readyInstance.getId());
+                    if (shouldBeDrained) {
+                        drainInstance(instanceId, String.format("Instance %s is going to be set as drain.", instanceId));
+                        // TODO: check
+                        //removeInstanceFromReady(readyInstance.getId());
+                    }
+                }
+            }
+        }
+
+        // monitor drain instances
+        if (readyInstances.size() > 0) {
+            List<String> keys = new LinkedList<>(readyInstances.keySet());
+            List<SpotinstSlave> slaves = getAllSpotinstSlaves();
+
+            for (String key : keys) {
+                ReadyInstance readyInstance = readyInstances.get(key);
+
+                if (readyInstance != null) {
+                    String instanceId = readyInstance.getId();
+                    boolean shouldBeTerminated = shouldTerminateDrainedInstance(instanceId);
+
+                    if (shouldBeTerminated) {
+                        terminateDrainedInstance(instanceId);
+                        removeInstanceFromReady(instanceId);
                     }
                 }
             }
         }
     }
 
-    private void drainNode(String instanceId, String reason) {
+    private boolean shouldBeDrained(ReadyInstance readyInstance)   {
+        boolean retVal = false;
+
+        // TODO: Gosha - get ready/drain threshold
+        Integer readyThreshold = 2 * 60;
+        Boolean isReadyOverThreshold =
+                TimeUtils.isTimePassedInSeconds(readyInstance.getCreatedAt(), readyThreshold);
+
+        retVal = isReadyOverThreshold;
+        return retVal;
+    }
+
+    private void drainInstance(String instanceId, String reason) {
         Node node = Jenkins.get().getNode(instanceId);
         if (node != null) {
             Computer computer = node.toComputer();
@@ -363,6 +395,43 @@ public abstract class BaseSpotinstCloud extends Cloud {
             }
         }
     }
+
+    private boolean shouldTerminateDrainedInstance(String instanceId) {
+        boolean retVal = false;
+        Node node = Jenkins.get().getNode(instanceId);
+
+        if (node != null) {
+            Computer computer = node.toComputer();
+
+            if (computer != null) {
+                Jenkins jenkins = Jenkins.getInstanceOrNull();
+
+                if (jenkins != null) {
+                    retVal = (computer.countBusy() == 0);
+                }
+            }
+        }
+
+        return retVal;
+    }
+
+    private void terminateDrainedInstance(String instanceId) {
+        Node node = Jenkins.get().getNode(instanceId);
+
+        if (node != null) {
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+
+            if (jenkins != null) {
+                try {
+                    jenkins.removeNode(node);
+                }
+                catch (IOException e) {
+                    LOGGER.error("Failed to remove drain node for instance: {}", instanceId, e);
+                }
+            }
+        }
+    }
+
 
     private void connectOfflineSshAgents() {
         List<SpotinstSlave> offlineAgents = getOfflineSshAgents();
