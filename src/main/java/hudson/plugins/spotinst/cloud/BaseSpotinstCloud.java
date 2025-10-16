@@ -314,18 +314,18 @@ public abstract class BaseSpotinstCloud extends Cloud {
                     }
 
                     // TODO: Gosha
-                    // define criteria for draining nodes
+                    // define criteria also for pending nodes to be drained
                     // or connect to external service that uses AI/ML that tells if it should be drained or not
-                    int drainingThreshold = 60 * 1000;
-                    Boolean isPendingOverDrainingThreshold =
-                            TimeUtils.isTimePassedInMinutes(pendingInstance.getCreatedAt(), drainingThreshold);
-                    String instanceId = pendingInstance.getId();
-
-                    if (isPendingOverDrainingThreshold) {
-                        drainInstance(instanceId,
-                                String.format("Instance %s is going to be set as drain, because it was created before more than %s msec.",
-                                        instanceId, drainingThreshold));
-                    }
+//                    int drainingThreshold = 60;
+//                    Boolean isPendingOverDrainingThreshold =
+//                            TimeUtils.isTimePassedInSeconds(pendingInstance.getCreatedAt(), drainingThreshold);
+//                    String instanceId = pendingInstance.getId();
+//
+//                    if (isPendingOverDrainingThreshold) {
+//                        drainInstance(instanceId,
+//                                String.format("Instance %s is going to be set as drain, because it was created before more than %s msec.",
+//                                        instanceId, drainingThreshold));
+//                    }
                 }
             }
             connectOfflineSshAgents();
@@ -346,8 +346,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
                     if (shouldBeDrained) {
                         drainInstance(instanceId, String.format("Instance %s is going to be set as drain.", instanceId));
-                        // TODO: check
-                        //removeInstanceFromReady(readyInstance.getId());
                     }
                 }
             }
@@ -363,11 +361,12 @@ public abstract class BaseSpotinstCloud extends Cloud {
 
                 if (readyInstance != null) {
                     String instanceId = readyInstance.getId();
-                    boolean shouldBeTerminated = shouldTerminateDrainedInstance(instanceId);
+                    boolean shouldRemoveDrainedInstance = shouldBeDrained(readyInstance) && shouldRemoveDrainedInstance(instanceId);
 
-                    if (shouldBeTerminated) {
-                        terminateDrainedInstance(instanceId);
-                        removeInstanceFromReady(instanceId);
+                   if (shouldRemoveDrainedInstance) {
+                     if (removeInstance(instanceId)) {
+                          removeInstanceFromReady(instanceId);
+                     }
                     }
                 }
             }
@@ -378,7 +377,8 @@ public abstract class BaseSpotinstCloud extends Cloud {
         boolean retVal = false;
 
         // TODO: Gosha - get ready/drain threshold
-        Integer readyThreshold = 2 * 60;
+        //Integer readyThreshold = 2 * 60;
+        Integer readyThreshold = 1;
         Boolean isReadyOverThreshold =
                 TimeUtils.isTimePassedInSeconds(readyInstance.getCreatedAt(), readyThreshold);
 
@@ -396,7 +396,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
     }
 
-    private boolean shouldTerminateDrainedInstance(String instanceId) {
+    private boolean shouldRemoveDrainedInstance(String instanceId) {
         boolean retVal = false;
         Node node = Jenkins.get().getNode(instanceId);
 
@@ -413,23 +413,6 @@ public abstract class BaseSpotinstCloud extends Cloud {
         }
 
         return retVal;
-    }
-
-    private void terminateDrainedInstance(String instanceId) {
-        Node node = Jenkins.get().getNode(instanceId);
-
-        if (node != null) {
-            Jenkins jenkins = Jenkins.getInstanceOrNull();
-
-            if (jenkins != null) {
-                try {
-                    jenkins.removeNode(node);
-                }
-                catch (IOException e) {
-                    LOGGER.error("Failed to remove drain node for instance: {}", instanceId, e);
-                }
-            }
-        }
     }
 
 
@@ -679,7 +662,7 @@ public abstract class BaseSpotinstCloud extends Cloud {
         ReadyInstance readyInstance = new ReadyInstance();
         readyInstance.setId(pendingInstance.getId());
         readyInstance.setNumOfExecutors(pendingInstance.getNumOfExecutors());
-        readyInstance.setCreatedAt(pendingInstance.getCreatedAt());
+        readyInstance.setCreatedAt(new Date());
         readyInstance.setRequestedLabel(pendingInstance.getRequestedLabel());
         readyInstances.put(readyInstance.getId(), readyInstance);
     }
