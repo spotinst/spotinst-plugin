@@ -13,7 +13,7 @@ You'll need a Spot account to use this plugin, you can get one at [Spot Sign-up]
 Once you have an account, login to [Spot Console] (https://console.spotinst.com/) to generate an API token:
 
 
-Settings -> Personal Access Tokens -> [Generate] (https://console.spotinst.com/#/settings/tokens)
+Settings -> Personal Access Tokens -> [Generate] (https://console.spotinst.com/#/settings/tokens).
 
 
 Now, create an Elastigroup with your proper Region, AMI, Instance Types etc.
